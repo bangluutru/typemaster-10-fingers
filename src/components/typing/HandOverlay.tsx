@@ -10,18 +10,18 @@ interface HandOverlayProps {
   lastPressedCorrect: boolean | null;
 }
 
-// Resting home row keys for the 10 fingers
-const FINGER_HOME_KEYS: Record<FingerType, string> = {
-  lp: 'a',
-  lr: 's',
-  lm: 'd',
-  li: 'f',
-  lt: 'space',
-  rt: 'space',
-  ri: 'j',
-  rm: 'k',
-  rr: 'l',
-  rp: ';',
+// Absolute coordinates of the 10 finger tips in the original 1200x520 SVG
+const FINGER_ORIGINS: Record<FingerType, { x: number; y: number }> = {
+  lp: { x: 202, y: 112 },  // leftPinky (82 + 120, 42 + 70)
+  lr: { x: 248, y: 91 },   // leftRing (128 + 120, 21 + 70)
+  lm: { x: 295, y: 80 },   // leftMiddle (175 + 120, 10 + 70)
+  li: { x: 351, y: 108 },  // leftIndex (231 + 120, 38 + 70)
+  lt: { x: 438, y: 291 },  // leftThumb (318 + 120, 221 + 70)
+  rt: { x: 797, y: 291 },  // rightThumb (82 + 715, 221 + 70)
+  ri: { x: 884, y: 108 },  // rightIndex (169 + 715, 38 + 70)
+  rm: { x: 940, y: 80 },   // rightMiddle (225 + 715, 10 + 70)
+  rr: { x: 987, y: 91 },   // rightRing (272 + 715, 21 + 70)
+  rp: { x: 1033, y: 112 }, // rightPinky (318 + 715, 42 + 70)
 };
 
 export const HandOverlay: React.FC<HandOverlayProps> = ({
@@ -30,9 +30,10 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
   lastPressedKey,
   lastPressedCorrect,
 }) => {
+  // If keyboard geometry isn't measured yet, hide overlay to prevent flash jump
   if (Object.keys(geometry).length === 0) return null;
 
-  // Resolve target key details
+  // Verify target keys and shift holds
   const targetConfig = fingerMapping[targetChar] || null;
   const targetFinger = targetConfig ? targetConfig.finger : null;
   const requiresShift = targetConfig ? targetConfig.requiresShift : false;
@@ -46,14 +47,14 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
     
     if (requiresShift) {
       if (targetHand === 'left') {
-        shiftFinger = 'rp';
+        shiftFinger = 'rp'; // Right pinky holds Shift
       } else {
-        shiftFinger = 'lp';
+        shiftFinger = 'lp'; // Left pinky holds Shift
       }
     }
   }
 
-  // Resolve typing errors
+  // Resolve errors
   const getCleanKey = (k: string): string => {
     if (k === ' ') return 'space';
     if (k === 'Enter') return 'enter';
@@ -64,7 +65,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
   const cleanLastPressed = lastPressedKey ? getCleanKey(lastPressedKey) : null;
   const isTypingError = lastPressedCorrect === false;
   const isTypingCorrect = lastPressedCorrect === true;
-  
+
   let errorFinger: FingerType | null = null;
   if (isTypingError && cleanLastPressed) {
     const errorConfig = fingerMapping[cleanLastPressed] || fingerMapping[lastPressedKey || ''];
@@ -73,322 +74,366 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
     }
   }
 
-  // Calculate current coordinates for the 10 fingers
-  const fingerPositions = (Object.keys(FINGER_HOME_KEYS) as FingerType[]).map((fingerId) => {
-    let targetKeyId = FINGER_HOME_KEYS[fingerId];
+  // DYNAMIC SVG ALIGNMENT MATH:
+  // We align the SVG overlay such that the rest positions of index fingers (left index 'F' and right index 'J')
+  // exactly match the measured key centers of 'F' and 'J' in the DOM.
+  const rectF = geometry['f'];
+  const rectJ = geometry['j'];
 
-    if (fingerId === activeFinger) {
-      const config = fingerMapping[targetChar];
-      targetKeyId = config ? config.key : targetChar.toLowerCase();
-    } else if (fingerId === shiftFinger) {
-      targetKeyId = fingerId === 'lp' ? 'shift-left' : 'shift-right';
-    }
+  if (!rectF || !rectJ) return null;
 
-    let rect = geometry[targetKeyId.toLowerCase()];
-    if (!rect && targetKeyId === 'space') {
-      rect = geometry['space'];
-    }
+  // 1. Calculate perfect scale ratio based on the J-F horizontal distance
+  const targetDistance = rectJ.centerX - rectF.centerX;
+  const svgOriginalDistance = 533; // 884 (rightIndex X) - 351 (leftIndex X) on original SVG
+  const scale = targetDistance / svgOriginalDistance;
 
-    if (!rect) {
-      const homeKey = FINGER_HOME_KEYS[fingerId];
-      rect = geometry[homeKey];
-    }
+  // 2. Calculate top-left absolute coordinates of the SVG overlay box
+  // Such that leftIndex tip (351, 108) lands exactly on rectF center
+  const svgLeft = rectF.centerX - 351 * scale;
+  const svgTop = rectF.centerY - 108 * scale;
 
-    if (!rect) return null;
-
-    let x = rect.centerX;
-    let y = rect.centerY;
-    
-    if (targetKeyId === 'space') {
-      if (fingerId === 'lt') {
-        x = rect.x + rect.width * 0.38;
-      } else if (fingerId === 'rt') {
-        x = rect.x + rect.width * 0.62;
-      }
-      y = rect.centerY - rect.height * 0.15;
-    }
+  // 3. Render 10 finger transformations dynamically
+  const fingerTransformations = (Object.keys(FINGER_ORIGINS) as FingerType[]).reduce((acc, fingerId) => {
+    const origin = FINGER_ORIGINS[fingerId];
+    let dx = 0;
+    let dy = 0;
+    let fingerScale = 1.0;
+    let fingerOpacity = 0.78; // Rest opacity
 
     const isActive = fingerId === activeFinger;
     const isShift = fingerId === shiftFinger;
     const isError = fingerId === errorFinger;
 
-    // Apply nảy nhẹ when gõ đúng
-    let scale = 1.0;
-    if (isActive && isTypingCorrect) {
-      scale = 0.92;
-    } else if (isActive || isShift) {
-      scale = 1.05;
+    if (isActive || isShift || isError) {
+      fingerOpacity = 1.0; // Highlight active fingers
+      
+      // Determine destination key coordinate
+      let targetKeyId = 'a'; // Fallback
+      if (isActive) {
+        const config = fingerMapping[targetChar];
+        targetKeyId = config ? config.key : targetChar.toLowerCase();
+      } else if (isShift) {
+        targetKeyId = fingerId === 'lp' ? 'shift-left' : 'shift-right';
+      }
+
+      let destRect = geometry[targetKeyId.toLowerCase()];
+      if (!destRect && targetKeyId === 'space') {
+        destRect = geometry['space'];
+      }
+
+      if (destRect) {
+        let destX = destRect.centerX;
+        let destY = destRect.centerY;
+
+        // Custom spacebar offsets for thumbs
+        if (targetKeyId === 'space') {
+          if (fingerId === 'lt') {
+            destX = destRect.x + destRect.width * 0.38;
+          } else if (fingerId === 'rt') {
+            destX = destRect.x + destRect.width * 0.62;
+          }
+          destY = destRect.centerY - destRect.height * 0.15;
+        }
+
+        // Convert DOM destination to SVG-local coordinates
+        const svgDestX = (destX - svgLeft) / scale;
+        const svgDestY = (destY - svgTop) / scale;
+
+        // Calculate translation deltas relative to finger's original tip drawing
+        dx = svgDestX - origin.x;
+        dy = svgDestY - origin.y;
+
+        // Apply interactive scaling feedback
+        if (isActive && isTypingCorrect) {
+          fingerScale = 0.92; // Tactile press scale down
+        } else {
+          fingerScale = 1.05; // Active hover scale up
+        }
+      }
     }
 
-    return {
-      fingerId,
-      x,
-      y,
-      width: rect.width,
-      height: rect.height,
-      isActive,
-      isShift,
-      isError,
-      scale,
-    };
-  });
+    acc[fingerId] = { dx, dy, scale: fingerScale, opacity: fingerOpacity, isActive, isShift, isError };
+    return acc;
+  }, {} as Record<FingerType, { dx: number; dy: number; scale: number; opacity: number; isActive: boolean; isShift: boolean; isError: boolean }>);
 
-  // Wrist coordinates (anchor points at bottom corners)
-  const leftWristX = geometry['a'] ? geometry['a'].centerX + 15 : 100;
-  const leftWristY = geometry['space'] ? geometry['space'].centerY + 105 : 350;
-
-  const rightWristX = geometry[';'] ? geometry[';'].centerX - 15 : 500;
-  const rightWristY = geometry['space'] ? geometry['space'].centerY + 105 : 350;
-
-  // Build organic palm paths matching "palm: hình bầu dục bo tròn"
-  const buildPalmPath = (hand: 'left' | 'right') => {
-    const isLeft = hand === 'left';
-    const wristX = isLeft ? leftWristX : rightWristX;
-    const wristY = isLeft ? leftWristY : rightWristY;
-    
-    const handFingers = isLeft ? ['lp', 'lr', 'lm', 'li', 'lt'] : ['rp', 'rr', 'rm', 'ri', 'rt'];
-    const positions = fingerPositions.filter(p => p && handFingers.includes(p.fingerId));
-
-    if (positions.length < 5) return '';
-
-    const fPos = (id: string) => positions.find(p => p?.fingerId === id);
-    const p1 = fPos(isLeft ? 'lp' : 'rp'); // Pinky
-    const p2 = fPos(isLeft ? 'lr' : 'rr'); // Ring
-    const p3 = fPos(isLeft ? 'lm' : 'rm'); // Middle
-    const p4 = fPos(isLeft ? 'li' : 'ri'); // Index
-    const p5 = fPos(isLeft ? 'lt' : 'rt'); // Thumb
-
-    if (!p1 || !p2 || !p3 || !p4 || !p5) return '';
-
-    const base1X = p1.x; const base1Y = p1.y + p1.height * 0.5;
-    const base2X = p2.x; const base2Y = p2.y + p2.height * 0.55;
-    const base3X = p3.x; const base3Y = p3.y + p3.height * 0.55;
-    const base4X = p4.x; const base4Y = p4.y + p4.height * 0.5;
-    const base5X = p5.x; const base5Y = p5.y + p5.height * 0.35;
-
-    if (isLeft) {
-      return `
-        M ${wristX - 18} ${wristY}
-        C ${wristX - 25} ${wristY - 25}, ${base1X - 15} ${base1Y + 25}, ${base1X} ${base1Y}
-        Q ${(base1X + base2X)/2} ${(base1Y + base2Y)/2 + 4}, ${base2X} ${base2Y}
-        Q ${(base2X + base3X)/2} ${(base2Y + base3Y)/2 + 4}, ${base3X} ${base3Y}
-        Q ${(base3X + base4X)/2} ${(base3Y + base4Y)/2 + 4}, ${base4X} ${base4Y}
-        C ${base4X + 8} ${base4Y - 2}, ${base5X - 12} ${base5Y - 15}, ${base5X} ${base5Y}
-        C ${base5X + 18} ${base5Y + 12}, ${wristX + 30} ${wristY - 15}, ${wristX + 18} ${wristY}
-        Z
-      `;
-    } else {
-      return `
-        M ${wristX + 18} ${wristY}
-        C ${wristX + 25} ${wristY - 25}, ${base1X + 15} ${base1Y + 25}, ${base1X} ${base1Y}
-        Q ${(base1X + base2X)/2} ${(base1Y + base2Y)/2 + 4}, ${base2X} ${base2Y}
-        Q ${(base2X + base3X)/2} ${(base2Y + base3Y)/2 + 4}, ${base3X} ${base3Y}
-        Q ${(base3X + base4X)/2} ${(base3Y + base4Y)/2 + 4}, ${base4X} ${base4Y}
-        C ${base4X - 8} ${base4Y - 2}, ${base5X + 12} ${base5Y - 15}, ${base5X} ${base5Y}
-        C ${base5X - 18} ${base5Y + 12}, ${wristX - 30} ${wristY - 15}, ${wristX - 18} ${wristY}
-        Z
-      `;
-    }
-  };
-
-  const leftPalmPath = buildPalmPath('left');
-  const rightPalmPath = buildPalmPath('right');
-
-  // Exact color codes from "MÀU SẮC NGÓN TAY (ĐỀ XUẤT)":
-  // Út trái: #FFB7D5 | Áp út trái: #C5B3FF | Giữa trái: #A6D8FF | Trỏ trái: #8EE7B5 | Cái trái: #6EE7E0
-  // Út phải: #FFB7D5 | Áp út phải: #C5B3FF | Giữa phải: #A6D8FF | Trỏ phải: #8EE7B5 | Cái phải: #6EE7E0
-  const fingerGradients = [
-    { id: 'grad-lp', start: '#FFF0F5', end: '#FFB7D5' }, // Pink
-    { id: 'grad-lr', start: '#F3EFFF', end: '#C5B3FF' }, // Purple
-    { id: 'grad-lm', start: '#E6F2FF', end: '#A6D8FF' }, // Blue
-    { id: 'grad-li', start: '#EEFBF4', end: '#8EE7B5' }, // Green
-    { id: 'grad-lt', start: '#E0FBF9', end: '#6EE7E0' }, // Teal
-    { id: 'grad-rt', start: '#E0FBF9', end: '#6EE7E0' }, // Teal
-    { id: 'grad-ri', start: '#EEFBF4', end: '#8EE7B5' }, // Green
-    { id: 'grad-rm', start: '#E6F2FF', end: '#A6D8FF' }, // Blue
-    { id: 'grad-rr', start: '#F3EFFF', end: '#C5B3FF' }, // Purple
-    { id: 'grad-rp', start: '#FFF0F5', end: '#FFB7D5' }, // Pink
-  ];
+  // SVG Size matching original bounds
+  const svgWidth = 1200 * scale;
+  const svgHeight = 520 * scale;
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none z-20">
-      
-      <svg className="absolute inset-0 w-full h-full overflow-visible">
-        
+    <div
+      style={{
+        position: 'absolute',
+        left: `${svgLeft}px`,
+        top: `${svgTop}px`,
+        width: `${svgWidth}px`,
+        height: `${svgHeight}px`,
+        pointerEvents: 'none',
+        zIndex: 25,
+      }}
+      className="pointer-events-none select-none"
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 1200 520"
+        xmlns="http://www.w3.org/2000/svg"
+        className="overflow-visible"
+      >
         <defs>
-          {fingerGradients.map((g) => (
-            <linearGradient key={g.id} id={g.id} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={g.start} stopOpacity="0.75" />
-              <stop offset="100%" stopColor={g.end} stopOpacity="0.65" />
-            </linearGradient>
-          ))}
-          {/* drop-shadow(0 4px 12px rgba(0,0,0,0.06)) */}
-          <filter id="premium-shadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.08" />
+          <linearGradient id="skin" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#FFE8D8" stopOpacity="0.75"/>
+            <stop offset="100%" stopColor="#FFC7A9" stopOpacity="0.55"/>
+          </linearGradient>
+          {/* Exact color gradients from typing-hands.svg */}
+          <linearGradient id="leftPinky" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#FF7FB3" stopOpacity=".82"/><stop offset="100%" stopColor="#FF7FB3" stopOpacity=".46"/></linearGradient>
+          <linearGradient id="leftRing" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#C58BFF" stopOpacity=".82"/><stop offset="100%" stop-color="#C58BFF" stopOpacity=".46"/></linearGradient>
+          <linearGradient id="leftMiddle" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#8EC5FF" stopOpacity=".82"/><stop offset="100%" stopColor="#8EC5FF" stopOpacity=".46"/></linearGradient>
+          <linearGradient id="leftIndex" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#69DDA6" stopOpacity=".82"/><stop offset="100%" stopColor="#69DDA6" stopOpacity=".46"/></linearGradient>
+          <linearGradient id="thumb" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#62D6D8" stopOpacity=".80"/><stop offset="100%" stopColor="#62D6D8" stopOpacity=".44"/></linearGradient>
+          <linearGradient id="rightIndex" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#FFB04D" stopOpacity=".82"/><stop offset="100%" stopColor="#FFB04D" stopOpacity=".46"/></linearGradient>
+          <linearGradient id="rightMiddle" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#8EC5FF" stopOpacity=".82"/><stop offset="100%" stopColor="#8EC5FF" stopOpacity=".46"/></linearGradient>
+          <linearGradient id="rightRing" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#C58BFF" stopOpacity=".82"/><stop offset="100%" stopColor="#C58BFF" stopOpacity=".46"/></linearGradient>
+          <linearGradient id="rightPinky" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#FF7FB3" stopOpacity=".82"/><stop offset="100%" stopColor="#FF7FB3" stopOpacity=".46"/></linearGradient>
+          
+          <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#406080" floodOpacity="0.08"/>
           </filter>
         </defs>
 
-        {/* Lòng bàn tay (opacity: 0.18 - 0.25) */}
-        {leftPalmPath && (
-          <path
-            d={leftPalmPath}
-            className="fill-slate-200/20 dark:fill-slate-800/10 stroke-slate-300/30 dark:stroke-slate-700/20 transition-all duration-200"
-            strokeWidth="1.5"
-            style={{ transition: 'd 0.18s ease-out' }}
-          />
-        )}
-        {rightPalmPath && (
-          <path
-            d={rightPalmPath}
-            className="fill-slate-200/20 dark:fill-slate-800/10 stroke-slate-300/30 dark:stroke-slate-700/20 transition-all duration-200"
-            strokeWidth="1.5"
-            style={{ transition: 'd 0.18s ease-out' }}
-          />
-        )}
+        <style>
+          {`
+            .hand { filter: url(#softShadow); }
+            .palm { fill: url(#skin); stroke: #F0A886; stroke-width: 1.5; opacity: 0.65; }
+            .crease { fill: none; stroke: #DCA284; stroke-width: 1; opacity: 0.22; }
+            .finger { stroke-width: 1.8; transition: all 0.18s ease-out; }
+            .nail { fill: #fff; opacity: 0.32; stroke: #fff; stroke-width: 0.8; }
+          `}
+        </style>
 
-        {/* Tendon lines (co giãn theo chuyển động ngón) */}
-        {fingerPositions.map((pos) => {
-          if (!pos) return null;
-          const { fingerId, x, y, isActive, isShift, isError } = pos;
-          
-          const isLeft = fingerId === 'lp' || fingerId === 'lr' || fingerId === 'lm' || fingerId === 'li' || fingerId === 'lt';
-          const wristX = isLeft ? leftWristX : rightWristX;
-          const wristY = isLeft ? leftWristY : rightWristY;
+        {/* LEFT HAND */}
+        <g id="left-hand" className="hand" transform="translate(120,70)">
+          <path className="palm" d="M145 255 C105 245 77 215 73 174 C70 135 91 101 125 90 C158 79 194 84 219 107 C245 131 258 164 260 205 C262 243 220 271 145 255 Z"/>
+          <path className="crease" d="M126 194 C147 182 172 181 194 193"/>
+          <path className="crease" d="M112 145 C145 157 189 154 216 136"/>
 
-          const ctrlX = (x + wristX) / 2;
-          const ctrlY = (y + wristY) / 2 + 15;
-
-          let strokeClass = 'stroke-slate-300 dark:stroke-slate-800';
-          let strokeWidth = '1.2';
-          
-          if (isError) {
-            strokeClass = 'stroke-danger-400';
-            strokeWidth = '1.8';
-          } else if (isActive) {
-            strokeClass = 'stroke-primary-400';
-            strokeWidth = '1.8';
-          } else if (isShift) {
-            strokeClass = 'stroke-teal-400';
-            strokeWidth = '1.8';
-          }
-
-          return (
+          {/* leftPinky */}
+          <g
+            id="left-pinky"
+            data-finger="leftPinky"
+            opacity={fingerTransformations.lp.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.lp.dx}px, ${fingerTransformations.lp.dy}px) scale(${fingerTransformations.lp.scale})`,
+              transformOrigin: '82px 42px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
             <path
-              key={`line-${fingerId}`}
-              d={`M ${wristX} ${wristY} Q ${ctrlX} ${ctrlY} ${x} ${y + 10}`}
-              fill="none"
-              className={`${strokeClass} transition-all duration-180`}
-              strokeWidth={strokeWidth}
-              style={{ transition: 'd 0.18s ease-out' }}
+              className="finger"
+              fill="url(#leftPinky)"
+              stroke={fingerTransformations.lp.isActive ? '#3b82f6' : fingerTransformations.lp.isError ? '#ef4444' : '#FF6FAA'}
+              strokeWidth={fingerTransformations.lp.isActive || fingerTransformations.lp.isError ? 2.5 : 1.8}
+              d="M75 151 C59 152 49 143 50 127 L58 51 C60 29 75 17 90 21 C105 25 111 42 108 63 L97 136 C95 147 88 151 75 151 Z"
             />
-          );
-        })}
+            <ellipse className="nail" cx="82" cy="42" rx="15" ry="10" transform="rotate(-82 82 42)"/>
+          </g>
 
-        {/* CẤU TRÚC 3 ĐỐT NGÓN TAY + MÓNG TAY (SVG EXPORT PRESETS) */}
-        {fingerPositions.map((pos) => {
-          if (!pos) return null;
-          const { fingerId, x, y, width, height, isActive, isShift, isError, scale } = pos;
+          {/* leftRing */}
+          <g
+            id="left-ring"
+            data-finger="leftRing"
+            opacity={fingerTransformations.lr.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.lr.dx}px, ${fingerTransformations.lr.dy}px) scale(${fingerTransformations.lr.scale})`,
+              transformOrigin: '128px 21px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#leftRing)"
+              stroke={fingerTransformations.lr.isActive ? '#3b82f6' : fingerTransformations.lr.isError ? '#ef4444' : '#B779FF'}
+              strokeWidth={fingerTransformations.lr.isActive || fingerTransformations.lr.isError ? 2.5 : 1.8}
+              d="M113 128 C95 128 86 118 88 101 L100 25 C104 4 119 -8 135 -4 C151 0 158 17 155 39 L142 108 C139 122 128 129 113 128 Z"
+            />
+            <ellipse className="nail" cx="128" cy="21" rx="16" ry="10" transform="rotate(-80 128 21)"/>
+          </g>
 
-          // Tính toán kích thước ngón tỉ lệ chuẩn theo phím
-          const fWidth = Math.max(12, Math.round(width * 0.35));
-          const fHeight = Math.max(42, Math.round(height * 1.15));
+          {/* leftMiddle */}
+          <g
+            id="left-middle"
+            data-finger="leftMiddle"
+            opacity={fingerTransformations.lm.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.lm.dx}px, ${fingerTransformations.lm.dy}px) scale(${fingerTransformations.lm.scale})`,
+              transformOrigin: '175px 10px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#leftMiddle)"
+              stroke={fingerTransformations.lm.isActive ? '#3b82f6' : fingerTransformations.lm.isError ? '#ef4444' : '#79B9FF'}
+              strokeWidth={fingerTransformations.lm.isActive || fingerTransformations.lm.isError ? 2.5 : 1.8}
+              d="M154 125 C136 124 127 113 130 96 L146 14 C150 -9 167 -21 184 -15 C200 -10 205 8 200 31 L183 104 C180 119 169 126 154 125 Z"
+            />
+            <ellipse className="nail" cx="175" cy="10" rx="17" ry="10" transform="rotate(-77 175 10)"/>
+          </g>
 
-          const radiusX = fWidth / 2;
-          
-          // Chiều cao của từng đốt ngón (3 đốt: segment s1, s2, s3 bo tròn)
-          const segHeight = fHeight / 3.2;
+          {/* leftIndex */}
+          <g
+            id="left-index"
+            data-finger="leftIndex"
+            opacity={fingerTransformations.li.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.li.dx}px, ${fingerTransformations.li.dy}px) scale(${fingerTransformations.li.scale})`,
+              transformOrigin: '231px 38px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#leftIndex)"
+              stroke={fingerTransformations.li.isActive ? '#3b82f6' : fingerTransformations.li.isError ? '#ef4444' : '#4DC98F'}
+              strokeWidth={fingerTransformations.li.isActive || fingerTransformations.li.isError ? 2.5 : 1.8}
+              d="M199 137 C182 134 174 123 180 107 L202 38 C209 18 226 10 241 18 C256 26 258 44 249 63 L223 125 C219 135 211 140 199 137 Z"
+            />
+            <ellipse className="nail" cx="231" cy="38" rx="15" ry="9" transform="rotate(-67 231 38)"/>
+          </g>
 
-          let strokeColor = 'stroke-slate-400/30 dark:stroke-slate-600/30';
-          let opacity = '0.55'; // Trạng thái nghỉ: opacity 0.55
+          {/* leftThumb */}
+          <g
+            id="left-thumb"
+            data-finger="leftThumb"
+            opacity={fingerTransformations.lt.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.lt.dx}px, ${fingerTransformations.lt.dy}px) scale(${fingerTransformations.lt.scale})`,
+              transformOrigin: '318px 221px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#thumb)"
+              stroke={fingerTransformations.lt.isActive ? '#3b82f6' : fingerTransformations.lt.isError ? '#ef4444' : '#42C2C6'}
+              strokeWidth={fingerTransformations.lt.isActive || fingerTransformations.lt.isError ? 2.5 : 1.8}
+              d="M240 182 C249 169 264 165 278 172 L333 200 C350 209 355 225 347 237 C339 250 321 252 305 243 L252 214 C238 206 233 193 240 182 Z"
+            />
+            <ellipse className="nail" cx="318" cy="221" rx="14" ry="9" transform="rotate(24 318 221)"/>
+          </g>
+        </g>
 
-          if (isError) {
-            strokeColor = 'stroke-danger-500';
-            opacity = '1'; // Trạng thái hoạt động: opacity 1
-          } else if (isActive) {
-            strokeColor = 'stroke-primary-500';
-            opacity = '1';
-          } else if (isShift) {
-            strokeColor = 'stroke-teal-500';
-            opacity = '1';
-          }
+        {/* RIGHT HAND */}
+        <g id="right-hand" className="hand" transform="translate(715,70)">
+          <path className="palm" d="M255 255 C295 245 323 215 327 174 C330 135 309 101 275 90 C242 79 206 84 181 107 C155 131 142 164 140 205 C138 243 180 271 255 255 Z"/>
+          <path className="crease" d="M274 194 C253 182 228 181 206 193"/>
+          <path className="crease" d="M288 145 C255 157 211 154 184 136"/>
 
-          const fillGradient = `url(#grad-${fingerId})`;
+          {/* rightIndex */}
+          <g
+            id="right-index"
+            data-finger="rightIndex"
+            opacity={fingerTransformations.ri.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.ri.dx}px, ${fingerTransformations.ri.dy}px) scale(${fingerTransformations.ri.scale})`,
+              transformOrigin: '169px 38px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#rightIndex)"
+              stroke={fingerTransformations.ri.isActive ? '#3b82f6' : fingerTransformations.ri.isError ? '#ef4444' : '#F6A13D'}
+              strokeWidth={fingerTransformations.ri.isActive || fingerTransformations.ri.isError ? 2.5 : 1.8}
+              d="M201 137 C218 134 226 123 220 107 L198 38 C191 18 174 10 159 18 C144 26 142 44 151 63 L177 125 C181 135 189 140 201 137 Z"
+            />
+            <ellipse className="nail" cx="169" cy="38" rx="15" ry="9" transform="rotate(67 169 38)"/>
+          </g>
 
-          return (
-            <g
-              key={fingerId}
-              transform={`translate(${x}, ${y}) scale(${scale})`}
-              className="transition-transform duration-180"
-              style={{
-                transition: 'transform 0.18s ease-out',
-              }}
-              opacity={opacity}
-              filter="url(#premium-shadow)"
-            >
-              {/* Đốt ngón 3 (Gốc ngón - s3) */}
-              <rect
-                x={-radiusX}
-                y={segHeight * 0.4}
-                width={fWidth}
-                height={segHeight * 1.1}
-                rx={radiusX * 0.6}
-                fill={fillGradient}
-                className={`${strokeColor} transition-all duration-180`}
-                strokeWidth="1.2"
-              />
+          {/* rightMiddle */}
+          <g
+            id="right-middle"
+            data-finger="rightMiddle"
+            opacity={fingerTransformations.rm.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.rm.dx}px, ${fingerTransformations.rm.dy}px) scale(${fingerTransformations.rm.scale})`,
+              transformOrigin: '225px 10px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#rightMiddle)"
+              stroke={fingerTransformations.rm.isActive ? '#3b82f6' : fingerTransformations.rm.isError ? '#ef4444' : '#79B9FF'}
+              strokeWidth={fingerTransformations.rm.isActive || fingerTransformations.rm.isError ? 2.5 : 1.8}
+              d="M246 125 C264 124 273 113 270 96 L254 14 C250 -9 233 -21 216 -15 C200 -10 195 8 200 31 L217 104 C220 119 231 126 246 125 Z"
+            />
+            <ellipse className="nail" cx="225" cy="10" rx="17" ry="10" transform="rotate(77 225 10)"/>
+          </g>
 
-              {/* Đốt ngón 2 (Giữa ngón - s2) */}
-              <rect
-                x={-radiusX * 0.95}
-                y={-segHeight * 0.7}
-                width={fWidth * 0.9}
-                height={segHeight * 1.15}
-                rx={radiusX * 0.55}
-                fill={fillGradient}
-                className={`${strokeColor} transition-all duration-180`}
-                strokeWidth="1.2"
-              />
+          {/* rightRing */}
+          <g
+            id="right-ring"
+            data-finger="rightRing"
+            opacity={fingerTransformations.rr.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.rr.dx}px, ${fingerTransformations.rr.dy}px) scale(${fingerTransformations.rr.scale})`,
+              transformOrigin: '272px 21px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#rightRing)"
+              stroke={fingerTransformations.rr.isActive ? '#3b82f6' : fingerTransformations.rr.isError ? '#ef4444' : '#B779FF'}
+              strokeWidth={fingerTransformations.rr.isActive || fingerTransformations.rr.isError ? 2.5 : 1.8}
+              d="M287 128 C305 128 314 118 312 101 L300 25 C296 4 281 -8 265 -4 C249 0 242 17 245 39 L258 108 C261 122 272 129 287 128 Z"
+            />
+            <ellipse className="nail" cx="272" cy="21" rx="16" ry="10" transform="rotate(80 272 21)"/>
+          </g>
 
-              {/* Đốt ngón 1 (Đầu ngón - s1 - bo tròn lớn) */}
-              <path
-                d={`
-                  M ${-radiusX * 0.9} ${-segHeight * 0.7}
-                  A ${radiusX * 0.9} ${radiusX * 0.9} 0 0 1 ${radiusX * 0.9} ${-segHeight * 0.7}
-                  L ${radiusX * 0.9} ${-segHeight * 0.6}
-                  L ${-radiusX * 0.9} ${-segHeight * 0.6}
-                  Z
-                `}
-                fill={fillGradient}
-                className={`${strokeColor} transition-all duration-180`}
-                strokeWidth="1.2"
-              />
+          {/* rightPinky */}
+          <g
+            id="right-pinky"
+            data-finger="rightPinky"
+            opacity={fingerTransformations.rp.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.rp.dx}px, ${fingerTransformations.rp.dy}px) scale(${fingerTransformations.rp.scale})`,
+              transformOrigin: '318px 42px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#rightPinky)"
+              stroke={fingerTransformations.rp.isActive ? '#3b82f6' : fingerTransformations.rp.isError ? '#ef4444' : '#FF6FAA'}
+              strokeWidth={fingerTransformations.rp.isActive || fingerTransformations.rp.isError ? 2.5 : 1.8}
+              d="M325 151 C341 152 351 143 350 127 L342 51 C340 29 325 17 310 21 C295 25 289 42 292 63 L303 136 C305 147 312 151 325 151 Z"
+            />
+            <ellipse className="nail" cx="318" cy="42" rx="15" ry="10" transform="rotate(82 318 42)"/>
+          </g>
 
-              {/* Móng tay (Nail - hình elip mảnh ở đầu ngón) */}
-              <ellipse
-                cx="0"
-                cy={-segHeight * 1.25}
-                rx={radiusX * 0.55}
-                ry={radiusX * 0.42}
-                className="fill-white/50 dark:fill-white/30 stroke-white/20"
-                strokeWidth="0.5"
-              />
-
-              {/* Nếp gấp khớp ngón (Khớp ngón vết gấp nhẹ) */}
-              <path
-                d={`M ${-radiusX * 0.65} ${-segHeight * 0.7} Q 0 ${-segHeight * 0.65} ${radiusX * 0.65} ${-segHeight * 0.7}`}
-                fill="none"
-                className="stroke-slate-500/25 dark:stroke-white/20"
-                strokeWidth="0.8"
-              />
-              <path
-                d={`M ${-radiusX * 0.75} ${segHeight * 0.4} Q 0 ${segHeight * 0.45} ${radiusX * 0.75} ${segHeight * 0.4}`}
-                fill="none"
-                className="stroke-slate-500/25 dark:stroke-white/20"
-                strokeWidth="0.8"
-              />
-            </g>
-          );
-        })}
+          {/* rightThumb */}
+          <g
+            id="right-thumb"
+            data-finger="rightThumb"
+            opacity={fingerTransformations.rt.opacity}
+            style={{
+              transform: `translate(${fingerTransformations.rt.dx}px, ${fingerTransformations.rt.dy}px) scale(${fingerTransformations.rt.scale})`,
+              transformOrigin: '82px 221px',
+              transition: 'transform 0.18s ease-out, opacity 0.18s',
+            }}
+          >
+            <path
+              className="finger"
+              fill="url(#thumb)"
+              stroke={fingerTransformations.rt.isActive ? '#3b82f6' : fingerTransformations.rt.isError ? '#ef4444' : '#42C2C6'}
+              strokeWidth={fingerTransformations.rt.isActive || fingerTransformations.rt.isError ? 2.5 : 1.8}
+              d="M160 182 C151 169 136 165 122 172 L67 200 C50 209 45 225 53 237 C61 250 79 252 95 243 L148 214 C162 206 167 193 160 182 Z"
+            />
+            <ellipse className="nail" cx="82" cy="221" rx="14" ry="9" transform="rotate(-24 82 221)"/>
+          </g>
+        </g>
       </svg>
     </div>
   );

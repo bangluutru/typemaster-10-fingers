@@ -24,20 +24,6 @@ const FINGER_HOME_KEYS: Record<FingerType, string> = {
   rp: ';',
 };
 
-// Friendly Vietnamese short names for fingers to display on overlays
-const FINGER_SHORT_NAMES: Record<FingerType, string> = {
-  lp: 'Út T',
-  lr: 'Áp T',
-  lm: 'Giữa T',
-  li: 'Trỏ T',
-  lt: 'Cái T',
-  rt: 'Cái P',
-  ri: 'Trỏ P',
-  rm: 'Giữa P',
-  rr: 'Áp P',
-  rp: 'Út P',
-};
-
 export const HandOverlay: React.FC<HandOverlayProps> = ({
   geometry,
   targetChar,
@@ -115,9 +101,9 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
     
     if (targetKeyId === 'space') {
       if (fingerId === 'lt') {
-        x = rect.x + rect.width * 0.4;
+        x = rect.x + rect.width * 0.38;
       } else if (fingerId === 'rt') {
-        x = rect.x + rect.width * 0.6;
+        x = rect.x + rect.width * 0.62;
       }
       y = rect.centerY - rect.height * 0.15;
     }
@@ -126,12 +112,12 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
     const isShift = fingerId === shiftFinger;
     const isError = fingerId === errorFinger;
 
-    // Apply tactile press effect: slightly scale down or push down when successfully pressing
+    // Apply nảy nhẹ when gõ đúng
     let scale = 1.0;
     if (isActive && isTypingCorrect) {
-      scale = 0.92; // Pressed down nảy nhẹ
+      scale = 0.92;
     } else if (isActive || isShift) {
-      scale = 1.06; // Active hover state
+      scale = 1.05;
     }
 
     return {
@@ -154,19 +140,17 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
   const rightWristX = geometry[';'] ? geometry[';'].centerX - 15 : 500;
   const rightWristY = geometry['space'] ? geometry['space'].centerY + 105 : 350;
 
-  // Build organic palm curves
+  // Build organic palm paths matching "palm: hình bầu dục bo tròn"
   const buildPalmPath = (hand: 'left' | 'right') => {
     const isLeft = hand === 'left';
     const wristX = isLeft ? leftWristX : rightWristX;
     const wristY = isLeft ? leftWristY : rightWristY;
     
-    // Get fingers of this hand
     const handFingers = isLeft ? ['lp', 'lr', 'lm', 'li', 'lt'] : ['rp', 'rr', 'rm', 'ri', 'rt'];
     const positions = fingerPositions.filter(p => p && handFingers.includes(p.fingerId));
 
     if (positions.length < 5) return '';
 
-    // Map fingers to temporary variables for path calculation
     const fPos = (id: string) => positions.find(p => p?.fingerId === id);
     const p1 = fPos(isLeft ? 'lp' : 'rp'); // Pinky
     const p2 = fPos(isLeft ? 'lr' : 'rr'); // Ring
@@ -176,14 +160,12 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
 
     if (!p1 || !p2 || !p3 || !p4 || !p5) return '';
 
-    // Coordinates of finger bases (slightly shifted down from tip coordinate y)
     const base1X = p1.x; const base1Y = p1.y + p1.height * 0.5;
     const base2X = p2.x; const base2Y = p2.y + p2.height * 0.55;
     const base3X = p3.x; const base3Y = p3.y + p3.height * 0.55;
     const base4X = p4.x; const base4Y = p4.y + p4.height * 0.5;
     const base5X = p5.x; const base5Y = p5.y + p5.height * 0.35;
 
-    // Organic SVG Bezier path tracing the palm perimeter
     if (isLeft) {
       return `
         M ${wristX - 18} ${wristY}
@@ -212,27 +194,27 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
   const leftPalmPath = buildPalmPath('left');
   const rightPalmPath = buildPalmPath('right');
 
-  // Gradient definitions helper matching user color suggestions
+  // Exact color codes from "MÀU SẮC NGÓN TAY (ĐỀ XUẤT)":
+  // Út trái: #FFB7D5 | Áp út trái: #C5B3FF | Giữa trái: #A6D8FF | Trỏ trái: #8EE7B5 | Cái trái: #6EE7E0
+  // Út phải: #FFB7D5 | Áp út phải: #C5B3FF | Giữa phải: #A6D8FF | Trỏ phải: #8EE7B5 | Cái phải: #6EE7E0
   const fingerGradients = [
-    { id: 'grad-lp', start: '#f472b6', end: '#ec4899' }, // Pink (Ngón út trái)
-    { id: 'grad-lr', start: '#c084fc', end: '#a855f7' }, // Purple (Ngón áp út trái)
-    { id: 'grad-lm', start: '#818cf8', end: '#6366f1' }, // Indigo (Ngón giữa trái)
-    { id: 'grad-li', start: '#60a5fa', end: '#3b82f6' }, // Blue (Ngón trỏ trái)
-    { id: 'grad-lt', start: '#2dd4bf', end: '#0d9488' }, // Teal (Ngón cái trái)
-    { id: 'grad-rt', start: '#2dd4bf', end: '#0d9488' }, // Teal (Ngón cái phải)
-    { id: 'grad-ri', start: '#34d399', end: '#10b981' }, // Emerald (Ngón trỏ phải)
-    { id: 'grad-rm', start: '#fbbf24', end: '#f59e0b' }, // Amber/Yellow (Ngón giữa phải)
-    { id: 'grad-rr', start: '#fb923c', end: '#f97316' }, // Orange (Ngón áp út phải)
-    { id: 'grad-rp', start: '#fda4af', end: '#f43f5e' }, // Rose/Red (Ngón út phải)
+    { id: 'grad-lp', start: '#FFF0F5', end: '#FFB7D5' }, // Pink
+    { id: 'grad-lr', start: '#F3EFFF', end: '#C5B3FF' }, // Purple
+    { id: 'grad-lm', start: '#E6F2FF', end: '#A6D8FF' }, // Blue
+    { id: 'grad-li', start: '#EEFBF4', end: '#8EE7B5' }, // Green
+    { id: 'grad-lt', start: '#E0FBF9', end: '#6EE7E0' }, // Teal
+    { id: 'grad-rt', start: '#E0FBF9', end: '#6EE7E0' }, // Teal
+    { id: 'grad-ri', start: '#EEFBF4', end: '#8EE7B5' }, // Green
+    { id: 'grad-rm', start: '#E6F2FF', end: '#A6D8FF' }, // Blue
+    { id: 'grad-rr', start: '#F3EFFF', end: '#C5B3FF' }, // Purple
+    { id: 'grad-rp', start: '#FFF0F5', end: '#FFB7D5' }, // Pink
   ];
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none z-20">
       
-      {/* Canvas SVG overlay */}
       <svg className="absolute inset-0 w-full h-full overflow-visible">
         
-        {/* 1. Define Premium Gradients for organic finger look */}
         <defs>
           {fingerGradients.map((g) => (
             <linearGradient key={g.id} id={g.id} x1="0%" y1="0%" x2="0%" y2="100%">
@@ -240,32 +222,31 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
               <stop offset="100%" stopColor={g.end} stopOpacity="0.65" />
             </linearGradient>
           ))}
-          {/* Active glow filter */}
-          <filter id="glow-active" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          {/* drop-shadow(0 4px 12px rgba(0,0,0,0.06)) */}
+          <filter id="premium-shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.08" />
           </filter>
         </defs>
 
-        {/* 2. Render Semi-Transparent Palm (0.15 opacity) linking fingers structurally */}
+        {/* Lòng bàn tay (opacity: 0.18 - 0.25) */}
         {leftPalmPath && (
           <path
             d={leftPalmPath}
-            className="fill-slate-300/25 dark:fill-slate-700/10 stroke-slate-300/35 dark:stroke-slate-700/20 transition-all duration-200"
+            className="fill-slate-200/20 dark:fill-slate-800/10 stroke-slate-300/30 dark:stroke-slate-700/20 transition-all duration-200"
             strokeWidth="1.5"
-            style={{ transition: 'd 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}
+            style={{ transition: 'd 0.18s ease-out' }}
           />
         )}
         {rightPalmPath && (
           <path
             d={rightPalmPath}
-            className="fill-slate-300/25 dark:fill-slate-700/10 stroke-slate-300/35 dark:stroke-slate-700/20 transition-all duration-200"
+            className="fill-slate-200/20 dark:fill-slate-800/10 stroke-slate-300/30 dark:stroke-slate-700/20 transition-all duration-200"
             strokeWidth="1.5"
-            style={{ transition: 'd 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}
+            style={{ transition: 'd 0.18s ease-out' }}
           />
         )}
 
-        {/* 3. Render organic Tendon lines connecting Wrist base to fingers */}
+        {/* Tendon lines (co giãn theo chuyển động ngón) */}
         {fingerPositions.map((pos) => {
           if (!pos) return null;
           const { fingerId, x, y, isActive, isShift, isError } = pos;
@@ -277,18 +258,18 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
           const ctrlX = (x + wristX) / 2;
           const ctrlY = (y + wristY) / 2 + 15;
 
-          let strokeClass = 'stroke-slate-300 dark:stroke-slate-700/50';
-          let strokeWidth = '1.5';
+          let strokeClass = 'stroke-slate-300 dark:stroke-slate-800';
+          let strokeWidth = '1.2';
           
           if (isError) {
-            strokeClass = 'stroke-danger-500/50';
-            strokeWidth = '2';
+            strokeClass = 'stroke-danger-400';
+            strokeWidth = '1.8';
           } else if (isActive) {
-            strokeClass = 'stroke-primary-500/50';
-            strokeWidth = '2';
+            strokeClass = 'stroke-primary-400';
+            strokeWidth = '1.8';
           } else if (isShift) {
-            strokeClass = 'stroke-teal-500/50';
-            strokeWidth = '2';
+            strokeClass = 'stroke-teal-400';
+            strokeWidth = '1.8';
           }
 
           return (
@@ -296,116 +277,115 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
               key={`line-${fingerId}`}
               d={`M ${wristX} ${wristY} Q ${ctrlX} ${ctrlY} ${x} ${y + 10}`}
               fill="none"
-              className={`${strokeClass} transition-all duration-200`}
+              className={`${strokeClass} transition-all duration-180`}
               strokeWidth={strokeWidth}
-              style={{ transition: 'd 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}
+              style={{ transition: 'd 0.18s ease-out' }}
             />
           );
         })}
 
-        {/* Wrist Base circle anchors */}
-        <circle cx={leftWristX} cy={leftWristY} r="8" className="fill-slate-300/40 dark:fill-slate-700/30 stroke-slate-400/20" strokeWidth="1" />
-        <circle cx={rightWristX} cy={rightWristY} r="8" className="fill-slate-300/40 dark:fill-slate-700/30 stroke-slate-400/20" strokeWidth="1" />
-
-        {/* 4. Render the 10 Fingers in detail (Body + Nail + Joint details) */}
+        {/* CẤU TRÚC 3 ĐỐT NGÓN TAY + MÓNG TAY (SVG EXPORT PRESETS) */}
         {fingerPositions.map((pos) => {
           if (!pos) return null;
           const { fingerId, x, y, width, height, isActive, isShift, isError, scale } = pos;
 
-          // Standardize finger shapes beautifully
-          const fWidth = Math.max(12, Math.round(width * 0.34));
-          const fHeight = Math.max(40, Math.round(height * 1.15));
+          // Tính toán kích thước ngón tỉ lệ chuẩn theo phím
+          const fWidth = Math.max(12, Math.round(width * 0.35));
+          const fHeight = Math.max(42, Math.round(height * 1.15));
 
           const radiusX = fWidth / 2;
-          const radiusY = fHeight / 2;
+          
+          // Chiều cao của từng đốt ngón (3 đốt: segment s1, s2, s3 bo tròn)
+          const segHeight = fHeight / 3.2;
 
-          let strokeColor = 'stroke-slate-400/40 dark:stroke-slate-500/30';
-          let glowFilter = '';
-          let opacity = '0.7';
+          let strokeColor = 'stroke-slate-400/30 dark:stroke-slate-600/30';
+          let opacity = '0.55'; // Trạng thái nghỉ: opacity 0.55
 
           if (isError) {
-            strokeColor = 'stroke-danger-600 dark:stroke-danger-400';
-            glowFilter = 'url(#glow-active)';
-            opacity = '0.85';
+            strokeColor = 'stroke-danger-500';
+            opacity = '1'; // Trạng thái hoạt động: opacity 1
           } else if (isActive) {
-            strokeColor = 'stroke-primary-600 dark:stroke-primary-400';
-            glowFilter = 'url(#glow-active)';
-            opacity = '0.85';
+            strokeColor = 'stroke-primary-500';
+            opacity = '1';
           } else if (isShift) {
-            strokeColor = 'stroke-teal-600 dark:stroke-teal-400';
-            glowFilter = 'url(#glow-active)';
-            opacity = '0.85';
+            strokeColor = 'stroke-teal-500';
+            opacity = '1';
           }
 
-          // Build finger shape capsule dynamically
-          const fingerPath = `
-            M ${-radiusX} ${-radiusY + radiusX}
-            A ${radiusX} ${radiusX} 0 0 1 ${radiusX} ${-radiusY + radiusX}
-            L ${radiusX} ${radiusY}
-            L ${-radiusX} ${radiusY}
-            Z
-          `;
+          const fillGradient = `url(#grad-${fingerId})`;
 
           return (
             <g
               key={fingerId}
               transform={`translate(${x}, ${y}) scale(${scale})`}
-              className="transition-transform duration-200"
+              className="transition-transform duration-180"
               style={{
-                transition: 'transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                transition: 'transform 0.18s ease-out',
               }}
+              opacity={opacity}
+              filter="url(#premium-shadow)"
             >
-              {/* Finger Body Capsule */}
-              <path
-                d={fingerPath}
-                fill={`url(#grad-${fingerId})`}
-                className={`${strokeColor} transition-all duration-200`}
-                strokeWidth="1.5"
-                filter={glowFilter}
-                opacity={opacity}
+              {/* Đốt ngón 3 (Gốc ngón - s3) */}
+              <rect
+                x={-radiusX}
+                y={segHeight * 0.4}
+                width={fWidth}
+                height={segHeight * 1.1}
+                rx={radiusX * 0.6}
+                fill={fillGradient}
+                className={`${strokeColor} transition-all duration-180`}
+                strokeWidth="1.2"
               />
 
-              {/* Finger Nail (Móng tay bán nguyệt ở đầu ngón) */}
+              {/* Đốt ngón 2 (Giữa ngón - s2) */}
+              <rect
+                x={-radiusX * 0.95}
+                y={-segHeight * 0.7}
+                width={fWidth * 0.9}
+                height={segHeight * 1.15}
+                rx={radiusX * 0.55}
+                fill={fillGradient}
+                className={`${strokeColor} transition-all duration-180`}
+                strokeWidth="1.2"
+              />
+
+              {/* Đốt ngón 1 (Đầu ngón - s1 - bo tròn lớn) */}
+              <path
+                d={`
+                  M ${-radiusX * 0.9} ${-segHeight * 0.7}
+                  A ${radiusX * 0.9} ${radiusX * 0.9} 0 0 1 ${radiusX * 0.9} ${-segHeight * 0.7}
+                  L ${radiusX * 0.9} ${-segHeight * 0.6}
+                  L ${-radiusX * 0.9} ${-segHeight * 0.6}
+                  Z
+                `}
+                fill={fillGradient}
+                className={`${strokeColor} transition-all duration-180`}
+                strokeWidth="1.2"
+              />
+
+              {/* Móng tay (Nail - hình elip mảnh ở đầu ngón) */}
               <ellipse
                 cx="0"
-                cy={-radiusY + radiusX + 2}
-                rx={radiusX * 0.65}
-                ry={radiusX * 0.55}
-                className="fill-white/40 dark:fill-white/20 stroke-white/10"
+                cy={-segHeight * 1.25}
+                rx={radiusX * 0.55}
+                ry={radiusX * 0.42}
+                className="fill-white/50 dark:fill-white/30 stroke-white/20"
                 strokeWidth="0.5"
-                opacity={isActive || isShift || isError ? '0.9' : '0.6'}
               />
 
-              {/* Finger Joint Lines (Các nét vẽ nếp nhăn khớp ngón tay tạo độ thật) */}
-              <g className="text-black/10 dark:text-white/15" opacity="0.6">
-                <path d={`M ${-radiusX * 0.7} ${-radiusY * 0.2} Q 0 ${-radiusY * 0.16} ${radiusX * 0.7} ${-radiusY * 0.2}`} fill="none" stroke="currentColor" strokeWidth="0.8" />
-                <path d={`M ${-radiusX * 0.8} ${radiusY * 0.2} Q 0 ${radiusY * 0.24} ${radiusX * 0.8} ${radiusY * 0.2}`} fill="none" stroke="currentColor" strokeWidth="0.8" />
-              </g>
-
-              {/* Text helper label inside active fingers */}
-              {(isActive || isShift || isError) && (
-                <g transform="translate(0, 5)">
-                  {/* Small round background bubble for text */}
-                  <rect
-                    x="-13"
-                    y="6"
-                    width="26"
-                    height="9"
-                    rx="3"
-                    className="fill-white/95 dark:fill-slate-950/95 stroke-slate-200/50 dark:stroke-slate-800/50"
-                    strokeWidth="0.5"
-                  />
-                  <text
-                    x="0"
-                    y="12"
-                    textAnchor="middle"
-                    className="text-[6.5px] font-black fill-slate-800 dark:fill-slate-200"
-                    style={{ fontSize: '6.5px' }}
-                  >
-                    {FINGER_SHORT_NAMES[fingerId]}
-                  </text>
-                </g>
-              )}
+              {/* Nếp gấp khớp ngón (Khớp ngón vết gấp nhẹ) */}
+              <path
+                d={`M ${-radiusX * 0.65} ${-segHeight * 0.7} Q 0 ${-segHeight * 0.65} ${radiusX * 0.65} ${-segHeight * 0.7}`}
+                fill="none"
+                className="stroke-slate-500/25 dark:stroke-white/20"
+                strokeWidth="0.8"
+              />
+              <path
+                d={`M ${-radiusX * 0.75} ${segHeight * 0.4} Q 0 ${segHeight * 0.45} ${radiusX * 0.75} ${segHeight * 0.4}`}
+                fill="none"
+                className="stroke-slate-500/25 dark:stroke-white/20"
+                strokeWidth="0.8"
+              />
             </g>
           );
         })}

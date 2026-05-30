@@ -5,23 +5,27 @@ import type { FingerType } from '../../data/fingerMapping';
 interface VirtualKeyProps {
   label: string;
   shiftLabel?: string;
+  keyId: string; // The physical key identifier (e.g. 'a', 'space', 'shift-left')
   finger?: FingerType;
   widthClass?: string;
   isTarget?: boolean;
   isError?: boolean;
   isPressed?: boolean;
+  registerRef?: (el: HTMLElement | null) => void;
 }
 
 export const VirtualKey: React.FC<VirtualKeyProps> = ({
   label,
   shiftLabel,
+  keyId,
   finger,
   widthClass = 'w-10 sm:w-12 md:w-14',
   isTarget = false,
   isError = false,
   isPressed = false,
+  registerRef,
 }) => {
-  let baseClass = `h-10 sm:h-12 md:h-14 flex flex-col justify-center items-center rounded-lg border text-xs sm:text-sm font-semibold transition-all duration-100 ${widthClass} select-none`;
+  let baseClass = `h-10 sm:h-12 md:h-14 flex flex-col justify-center items-center rounded-lg border text-xs sm:text-sm font-semibold transition-all duration-100 ${widthClass} select-none relative`;
 
   let fingerClass = finger ? keyFingerColors[finger] : 'border-slate-300 dark:border-slate-700';
 
@@ -45,9 +49,13 @@ export const VirtualKey: React.FC<VirtualKeyProps> = ({
   };
 
   return (
-    <div className={`relative ${baseClass} ${fingerClass} ${stateClass} shadow-sm`}>
+    <div
+      ref={registerRef}
+      data-key={keyId}
+      className={`${baseClass} ${fingerClass} ${stateClass} shadow-sm`}
+    >
       {shiftLabel && (
-        <span className="absolute top-1 left-1.5 text-[9px] sm:text-[10px] opacity-60">
+        <span className="absolute top-1 left-1.5 text-[8px] sm:text-[9px] opacity-60">
           {shiftLabel}
         </span>
       )}

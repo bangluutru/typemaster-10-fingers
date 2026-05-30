@@ -3,9 +3,8 @@ import { ChevronLeft, RotateCcw } from 'lucide-react';
 import { lessons } from '../data/lessons';
 import { useTypingEngine } from '../hooks/useTypingEngine';
 import { LessonText } from '../components/LessonText';
-import { VirtualKeyboard } from '../components/Keyboard/VirtualKeyboard';
-import { HandGuide } from '../components/HandGuide/HandGuide';
 import { StatsPanel } from '../components/StatsPanel';
+import { KeyboardPracticeStage } from '../components/typing/KeyboardPracticeStage';
 import type { AppSettings } from '../stores/settingsStore';
 
 interface PracticePageProps {
@@ -61,6 +60,7 @@ export const PracticePage: React.FC<PracticePageProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-5 w-full max-w-4xl py-2 px-4 select-none">
+      {/* Top Header Row with Navigation */}
       <div className="w-full flex items-center justify-between">
         <button
           onClick={() => onNavigate('lessons')}
@@ -88,6 +88,7 @@ export const PracticePage: React.FC<PracticePageProps> = ({
         </button>
       </div>
 
+      {/* Stats Dashboard */}
       <StatsPanel
         wpm={wpm}
         accuracy={accuracy}
@@ -97,6 +98,7 @@ export const PracticePage: React.FC<PracticePageProps> = ({
         totalLength={lesson.text.length}
       />
 
+      {/* Main text box display */}
       <LessonText
         text={lesson.text}
         currentIndex={currentIndex}
@@ -105,20 +107,14 @@ export const PracticePage: React.FC<PracticePageProps> = ({
         lastPressedCorrect={lastPressedCorrect}
       />
 
-      <div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
-        {settings.handsEnabled && (
-          <div className="lg:col-span-2 w-full">
-            <HandGuide targetChar={targetChar} />
-          </div>
-        )}
-
-        <div className={settings.handsEnabled ? 'lg:col-span-3 w-full' : 'lg:col-span-5 w-full'}>
-          <VirtualKeyboard
-            targetChar={targetChar}
-            lastPressedKey={lastPressedKey}
-            lastPressedCorrect={lastPressedCorrect}
-          />
-        </div>
+      {/* Unified Coordinate Practice Stage (Keyboard + Hands Overlay) */}
+      <div className="w-full mt-2">
+        <KeyboardPracticeStage
+          targetChar={targetChar}
+          lastPressedKey={lastPressedKey}
+          lastPressedCorrect={lastPressedCorrect}
+          showHands={settings.handsEnabled}
+        />
       </div>
     </div>
   );

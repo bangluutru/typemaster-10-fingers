@@ -23,7 +23,7 @@ const getFingerStyle = (
   let tx = 0;
   let ty = 0;
   let scale = 1.0;
-  let opacity = 0.65; // Default rest opacity (as suggested in design guide: 0.55 - 0.7)
+  let opacity = 0.60; // Default rest opacity (0.55 - 0.7 as suggested)
   
   const isWorking = isActive || isShift || isError;
 
@@ -80,19 +80,19 @@ const getFingerStyle = (
     }
   }
 
-  // Exact joint anchor root coordinates (joint base) on SVG coordinate system (300x380)
-  let transformOrigin = '150px 250px';
+  // Exact joint anchor root coordinates on the redesigned 400x480 SVG coordinates
+  let transformOrigin = '200px 300px';
   switch (fingerId) {
-    case 'lp': transformOrigin = '47px 185px'; break;
-    case 'lr': transformOrigin = '98px 175px'; break;
-    case 'lm': transformOrigin = '148px 172px'; break;
-    case 'li': transformOrigin = '192px 175px'; break;
-    case 'lt': transformOrigin = '218px 230px'; break;
-    case 'rt': transformOrigin = '82px 230px'; break;
-    case 'ri': transformOrigin = '108px 175px'; break;
-    case 'rm': transformOrigin = '152px 172px'; break;
-    case 'rr': transformOrigin = '202px 175px'; break;
-    case 'rp': transformOrigin = '253px 185px'; break;
+    case 'lp': transformOrigin = '108px 220px'; break;
+    case 'lr': transformOrigin = '147px 220px'; break;
+    case 'lm': transformOrigin = '194px 220px'; break;
+    case 'li': transformOrigin = '238px 225px'; break;
+    case 'lt': transformOrigin = '260px 290px'; break;
+    case 'rt': transformOrigin = '140px 290px'; break;
+    case 'ri': transformOrigin = '162px 225px'; break;
+    case 'rm': transformOrigin = '206px 220px'; break;
+    case 'rr': transformOrigin = '253px 220px'; break;
+    case 'rp': transformOrigin = '292px 220px'; break;
   }
 
   return {
@@ -164,24 +164,24 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
   if (!rectA || !rectF || !rectJ || !rectPinkyRight) return null;
 
   // 1. Calculate Left Hand coordinates
-  // Vertical distance between Pinky (45, 110) and Index (210, 95) is 165 units on SVG
+  // Horizontal distance between Pinky (105, 120) and Index (242, 92) is exactly 137 units on SVG
   const leftDistance = rectF.centerX - rectA.centerX;
-  const scaleLeft = leftDistance / 165;
-  const leftHandWidth = 300 * scaleLeft;
-  const leftHandHeight = 380 * scaleLeft;
-  // Position so Left Index tip (210, 95) exactly lands on rectF center
-  const leftSvgLeft = rectF.centerX - 210 * scaleLeft;
-  const leftSvgTop = rectF.centerY - 95 * scaleLeft;
+  const scaleLeft = leftDistance / 137;
+  const leftHandWidth = 400 * scaleLeft;
+  const leftHandHeight = 480 * scaleLeft;
+  // Position so Left Index tip (242, 92) exactly lands on rectF center
+  const leftSvgLeft = rectF.centerX - 242 * scaleLeft;
+  const leftSvgTop = rectF.centerY - 92 * scaleLeft;
 
   // 2. Calculate Right Hand coordinates
-  // Horizontal distance between Index (90, 95) and Pinky (255, 110) is 165 units on SVG
+  // Horizontal distance between Index (158, 92) and Pinky (295, 120) is exactly 137 units on SVG
   const rightDistance = rectPinkyRight.centerX - rectJ.centerX;
-  const scaleRight = rightDistance / 165;
-  const rightHandWidth = 300 * scaleRight;
-  const rightHandHeight = 380 * scaleRight;
-  // Position so Right Index tip (90, 95) exactly lands on rectJ center
-  const rightSvgLeft = rectJ.centerX - 90 * scaleRight;
-  const rightSvgTop = rectJ.centerY - 95 * scaleRight;
+  const scaleRight = rightDistance / 137;
+  const rightHandWidth = 400 * scaleRight;
+  const rightHandHeight = 480 * scaleRight;
+  // Position so Right Index tip (158, 92) exactly lands on rectJ center
+  const rightSvgLeft = rectJ.centerX - 158 * scaleRight;
+  const rightSvgTop = rectJ.centerY - 92 * scaleRight;
 
   // Render a single seamless finger group (borderless path overlay, nail, knuckle lines)
   const renderFinger = (
@@ -283,7 +283,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
         <svg
           width="100%"
           height="100%"
-          viewBox="0 0 300 380"
+          viewBox="0 0 400 480"
           xmlns="http://www.w3.org/2000/svg"
           className="overflow-visible"
         >
@@ -297,37 +297,37 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
             {/* Smooth fading pastel gradients (melts to transparent at finger roots) */}
             {/* lp (Pinky): #FF7BD5 */}
             <linearGradient id="grad-lp" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#FF7BD5" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#FF7BD5" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#FF7BD5" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#FF7BD5" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#FF7BD5" stopOpacity="0.0"/>
             </linearGradient>
             {/* lr (Ring): #C58DFF */}
             <linearGradient id="grad-lr" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#C58DFF" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#C58DFF" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#C58DFF" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#C58DFF" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#C58DFF" stopOpacity="0.0"/>
             </linearGradient>
             {/* lm (Middle): #A6DBFF */}
             <linearGradient id="grad-lm" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#A6DBFF" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#A6DBFF" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#A6DBFF" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#A6DBFF" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#A6DBFF" stopOpacity="0.0"/>
             </linearGradient>
             {/* li (Index): #8EE7B5 */}
             <linearGradient id="grad-li" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#8EE7B5" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#8EE7B5" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#8EE7B5" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#8EE7B5" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#8EE7B5" stopOpacity="0.0"/>
             </linearGradient>
             {/* lt (Thumb): #6EE7E0 */}
             <linearGradient id="grad-lt" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#6EE7E0" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#6EE7E0" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#6EE7E0" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#6EE7E0" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#6EE7E0" stopOpacity="0.0"/>
             </linearGradient>
 
             <filter id="softHandShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="10" stdDeviation="10" floodColor="#475569" floodOpacity="0.08"/>
+              <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#475569" floodOpacity="0.08"/>
             </filter>
           </defs>
 
@@ -335,74 +335,80 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
             {`
               .hand-svg { filter: url(#softHandShadow); }
               .outer-outline { fill: url(#leftPalmSkin); stroke: rgba(238, 150, 110, 0.45); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+              .palm-crease { fill: none; stroke: rgba(238, 150, 110, 0.22); stroke-width: 1.2; stroke-linecap: round; }
               .nail { fill: rgba(255, 255, 255, 0.4); stroke: rgba(255, 255, 255, 0.7); stroke-width: 0.8; }
             `}
           </style>
 
           <g className="hand left hand-svg">
-            {/* SINGLE SEAMLESS OUTER OUTLINE - Keeps the palm and fingers unified 100% */}
+            {/* SINGLE SEAMLESS OUTER OUTLINE - Recreated 100% to match LEFT HAND SVG mockup */}
             <path
               className="outer-outline"
-              d="M 70,380 C 45,350 25,290 33,205 C 31,165 33,130 40,118 C 45,108 55,108 59,118 C 65,130 63,165 65,198 C 68,150 78,92 86,80 C 92,70 102,70 108,80 C 117,92 120,150 120,186 C 123,145 133,72 142,60 C 147,50 157,50 162,60 C 171,72 173,145 174,186 C 177,150 186,105 196,95 C 201,85 211,85 216,95 C 224,105 225,150 221,208 C 220,215 212,228 215,225 C 220,202 242,198 258,212 C 272,224 286,242 284,258 C 281,270 262,274 246,268 C 230,262 232,320 230,380 Z"
+              d="M 110,470 C 95,440 70,360 75,340 C 80,320 88,260 92,218 C 90,165 91,135 105,120 C 118,105 121,155 124,222 C 127,155 133,105 148,88 C 162,70 164,120 170,218 C 173,120 180,75 196,60 C 212,45 214,95 218,222 C 221,120 227,105 242,92 C 256,78 257,135 258,250 C 258,285 248,310 262,305 C 290,295 320,285 355,275 C 375,270 380,305 350,335 C 320,365 295,410 290,420 C 285,430 250,455 230,470 Z"
             />
+
+            {/* Creases (Lines) on the Palm - Recreated from biological curves of LEFT HAND SVG mockup */}
+            <path className="palm-crease" d="M 242,260 C 235,310 205,370 200,410" /> {/* Life line */}
+            <path className="palm-crease" d="M 115,260 C 135,270 175,265 235,245" /> {/* Head line */}
+            <path className="palm-crease" d="M 110,230 C 130,240 170,225 185,200" /> {/* Heart line */}
 
             {/* Left Pinky (Ngón út trái) */}
             {renderFinger(
               'lp',
               'pinkyfinger',
-              'M 33,205 C 31,165 33,130 40,118 C 45,108 55,108 59,118 C 65,130 63,165 65,198 Z',
-              47, 127, 10, 7, -82,
+              'M 92,218 C 90,165 91,135 105,120 C 118,105 121,155 124,222 Z',
+              105, 132, 11, 7.5, -82,
               '#FF7BD5',
               'url(#grad-lp)',
-              'M 38,155 Q 47,152 56,155',
-              'M 35,178 Q 47,175 58,178'
+              'M 96,160 Q 106,156 116,160',
+              'M 94,188 Q 106,184 118,188'
             )}
 
             {/* Left Ring (Ngón áp út trái) */}
             {renderFinger(
               'lr',
               'ringfinger',
-              'M 65,198 C 68,150 78,92 86,80 C 92,70 102,70 108,80 C 117,92 120,150 120,186 Z',
-              100, 87, 11, 8, -80,
+              'M 124,222 C 127,155 133,105 148,88 C 162,70 164,120 170,218 Z',
+              148, 101, 12, 8, -80,
               '#C58DFF',
               'url(#grad-lr)',
-              'M 80,125 Q 100,121 118,125',
-              'M 75,155 Q 100,150 118,155'
+              'M 134,132 Q 148,127 162,132',
+              'M 130,168 Q 148,163 164,168'
             )}
 
             {/* Left Middle (Ngón giữa trái) */}
             {renderFinger(
               'lm',
               'middlefinger',
-              'M 120,186 C 123,145 133,72 142,60 C 147,50 157,50 162,60 C 171,72 173,145 174,186 Z',
-              155, 67, 12, 8, -77,
+              'M 170,218 C 173,120 180,75 196,60 C 212,45 214,95 218,222 Z',
+              196, 74, 13, 8.5, -77,
               '#A6DBFF',
               'url(#grad-lm)',
-              'M 132,108 Q 155,103 172,108',
-              'M 128,142 Q 155,137 172,142'
+              'M 180,116 Q 196,111 210,116',
+              'M 176,152 Q 196,147 212,152'
             )}
 
             {/* Left Index (Ngón trỏ trái) */}
             {renderFinger(
               'li',
               'indexfinger',
-              'M 174,186 C 177,150 186,105 196,95 C 201,85 211,85 216,95 C 224,105 225,150 221,208 Z',
-              210, 102, 11, 8, -67,
+              'M 218,222 C 221,120 227,105 242,92 C 256,78 257,135 258,250 Z',
+              242, 106, 12, 8, -67,
               '#8EE7B5',
               'url(#grad-li)',
-              'M 188,138 Q 210,134 226,138',
-              'M 182,168 Q 210,163 224,168'
+              'M 226,142 Q 242,138 256,142',
+              'M 222,176 Q 242,171 254,176'
             )}
 
             {/* Left Thumb (Ngón cái trái) */}
             {renderFinger(
               'lt',
               'thumb',
-              'M 215,225 C 220,202 242,198 258,212 C 272,224 286,242 284,258 C 281,270 262,274 246,268 C 231,262 220,245 215,225 Z',
-              268, 245, 11, 8, 24,
+              'M 258,250 C 258,285 248,310 262,305 C 290,295 320,285 355,275 C 375,270 380,305 350,335 C 320,365 295,410 290,420 Z',
+              348, 283, 12, 8, 24,
               '#6EE7E0',
               'url(#grad-lt)',
-              'M 235,230 Q 250,222 262,232'
+              'M 292,305 Q 312,298 328,308'
             )}
           </g>
         </svg>
@@ -424,7 +430,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
         <svg
           width="100%"
           height="100%"
-          viewBox="0 0 300 380"
+          viewBox="0 0 400 480"
           xmlns="http://www.w3.org/2000/svg"
           className="overflow-visible"
         >
@@ -438,100 +444,105 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
             {/* Smooth fading pastel gradients for Right Hand */}
             {/* rp (Pinky): #FF7BD5 */}
             <linearGradient id="grad-rp" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#FF7BD5" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#FF7BD5" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#FF7BD5" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#FF7BD5" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#FF7BD5" stopOpacity="0.0"/>
             </linearGradient>
             {/* rr (Ring): #C58DFF */}
             <linearGradient id="grad-rr" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#C58DFF" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#C58DFF" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#C58DFF" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#C58DFF" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#C58DFF" stopOpacity="0.0"/>
             </linearGradient>
             {/* rm (Middle): #A6DBFF */}
             <linearGradient id="grad-rm" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#A6DBFF" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#A6DBFF" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#A6DBFF" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#A6DBFF" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#A6DBFF" stopOpacity="0.0"/>
             </linearGradient>
             {/* ri (Index): #FFB455 */}
             <linearGradient id="grad-ri" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#FFB455" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#FFB455" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#FFB455" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#FFB455" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#FFB455" stopOpacity="0.0"/>
             </linearGradient>
             {/* rt (Thumb): #6EE7E0 */}
             <linearGradient id="grad-rt" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#6EE7E0" stopOpacity="0.80"/>
-              <stop offset="65%" stopColor="#6EE7E0" stopOpacity="0.40"/>
+              <stop offset="0%" stopColor="#6EE7E0" stopOpacity="0.85"/>
+              <stop offset="65%" stopColor="#6EE7E0" stopOpacity="0.45"/>
               <stop offset="100%" stopColor="#6EE7E0" stopOpacity="0.0"/>
             </linearGradient>
           </defs>
 
           <g className="hand right hand-svg">
-            {/* SINGLE SEAMLESS OUTER OUTLINE - Keeps the palm and fingers unified 100% */}
+            {/* SINGLE SEAMLESS OUTER OUTLINE - Perfect mathematical mirror (x -> 400 - x) */}
             <path
               className="outer-outline"
-              d="M 230,380 C 255,350 275,290 267,205 C 269,165 267,130 260,118 C 255,108 245,108 241,118 C 235,130 237,165 235,198 C 232,150 222,92 214,80 C 208,70 198,70 192,80 C 183,92 180,150 180,186 C 177,145 167,72 158,60 C 153,50 143,50 138,60 C 129,72 127,145 126,186 C 123,150 114,105 104,95 C 99,85 89,85 84,95 C 76,105 75,150 79,208 C 80,215 88,228 85,225 C 80,202 58,198 42,212 C 28,224 14,242 16,258 C 19,270 38,274 54,268 C 70,262 68,320 70,380 Z"
+              d="M 290,470 C 305,440 330,360 325,340 C 320,320 312,260 308,218 C 310,165 309,135 295,120 C 282,105 279,155 276,222 C 273,155 267,105 252,88 C 238,70 236,120 230,218 C 227,120 220,75 204,60 C 188,45 186,95 182,222 C 179,120 173,105 158,92 C 144,78 143,135 142,250 C 142,285 152,310 138,305 C 110,295 80,285 45,275 C 25,270 20,305 50,335 C 80,365 105,410 110,420 C 115,430 150,455 170,470 Z"
             />
+
+            {/* Creases (Lines) on the Palm - Mirrored (x -> 400 - x) */}
+            <path className="palm-crease" d="M 158,260 C 165,310 195,370 200,410" />
+            <path className="palm-crease" d="M 285,260 C 265,270 225,265 165,245" />
+            <path className="palm-crease" d="M 290,230 C 270,240 230,225 215,200" />
 
             {/* Right Index (Ngón trỏ phải) */}
             {renderFinger(
               'ri',
               'indexfinger',
-              'M 126,186 C 123,150 114,105 104,95 C 99,85 89,85 84,95 C 76,105 75,150 79,208 Z',
-              90, 102, 11, 8, 67,
+              'M 182,222 C 179,120 173,105 158,92 C 144,78 143,135 142,250 Z',
+              158, 106, 12, 8, 67,
               '#FFB455',
               'url(#grad-ri)',
-              'M 112,138 Q 90,134 74,138',
-              'M 118,168 Q 90,163 76,168'
+              'M 174,142 Q 158,138 144,142',
+              'M 178,176 Q 158,171 146,176'
             )}
 
             {/* Right Middle (Ngón giữa phải) */}
             {renderFinger(
               'rm',
               'middlefinger',
-              'M 180,186 C 177,145 167,72 158,60 C 153,50 143,50 138,60 C 129,72 127,145 126,186 Z',
-              145, 67, 12, 8, 77,
+              'M 182,222 C 186,95 188,45 204,60 C 220,75 227,120 230,218 Z',
+              204, 74, 13, 8.5, 77,
               '#A6DBFF',
               'url(#grad-rm)',
-              'M 168,108 Q 145,103 128,108',
-              'M 172,142 Q 145,137 128,142'
+              'M 220,116 Q 204,111 190,116',
+              'M 224,152 Q 204,147 188,152'
             )}
 
             {/* Right Ring (Ngón áp út phải) */}
             {renderFinger(
               'rr',
               'ringfinger',
-              'M 235,198 C 232,150 224,92 214,80 C 208,70 198,70 192,80 C 183,92 180,150 180,186 Z',
-              200, 87, 11, 8, 80,
+              'M 230,218 C 236,120 238,70 252,88 C 267,105 273,155 276,222 Z',
+              252, 101, 12, 8, 80,
               '#C58DFF',
               'url(#grad-rr)',
-              'M 220,125 Q 200,121 182,125',
-              'M 225,155 Q 200,150 182,155'
+              'M 266,132 Q 252,127 238,132',
+              'M 270,168 Q 252,163 236,168'
             )}
 
             {/* Right Pinky (Ngón út phải) */}
             {renderFinger(
               'rp',
               'pinkyfinger',
-              'M 267,205 C 269,165 267,130 260,118 C 255,108 245,108 241,118 C 235,130 237,165 235,198 Z',
-              253, 127, 10, 7, 82,
+              'M 276,222 C 279,155 282,105 295,120 C 309,135 308,165 308,218 Z',
+              295, 132, 11, 7.5, 82,
               '#FF7BD5',
               'url(#grad-rp)',
-              'M 262,155 Q 253,152 244,155',
-              'M 265,178 Q 253,175 242,178'
+              'M 304,160 Q 294,156 284,160',
+              'M 306,188 Q 294,184 282,188'
             )}
 
             {/* Right Thumb (Ngón cái phải) */}
             {renderFinger(
               'rt',
               'thumb',
-              'M 85,225 C 80,202 58,198 42,212 C 28,224 14,242 16,258 C 19,270 38,274 54,268 C 69,262 80,245 85,225 Z',
-              32, 245, 11, 8, -24,
+              'M 142,250 C 142,285 152,310 138,305 C 110,295 80,285 45,275 C 25,270 20,305 50,335 C 80,365 105,410 110,420 Z',
+              52, 283, 12, 8, -24,
               '#6EE7E0',
               'url(#grad-rt)',
-              'M 65,230 Q 50,222 38,232'
+              'M 108,305 Q 88,298 72,308'
             )}
           </g>
         </svg>

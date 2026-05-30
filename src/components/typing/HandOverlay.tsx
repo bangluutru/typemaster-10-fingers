@@ -103,13 +103,12 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
   const leftSvgLeft = rectF.centerX - 1100 * scaleLeft;
   const leftSvgTop = rectF.centerY - 200 * scaleLeft;
 
-  // 2. Right Palm Background Positioning (Align Right Index tip at 420, 210 and Right Pinky tip at 810, 230)
-  const rightDistance = rectPinkyRight.centerX - rectJ.centerX;
-  const scaleRight = rightDistance / 390;
-  const rightSvgWidth = 1536 * scaleRight;
-  const rightSvgHeight = 1024 * scaleRight;
-  const rightSvgLeft = rectJ.centerX - 420 * scaleRight;
-  const rightSvgTop = rectJ.centerY - 210 * scaleRight;
+  // 2. Right Palm Background Positioning (Align Mirrored Right Index tip at 436, 200)
+  // We use scaleLeft to ensure the left and right background palms are exactly equal in size!
+  const rightSvgWidth = 1536 * scaleLeft;
+  const rightSvgHeight = 1024 * scaleLeft;
+  const rightSvgLeft = rectJ.centerX - 436 * scaleLeft;
+  const rightSvgTop = rectJ.centerY - 200 * scaleLeft;
 
   // Get Home position of any finger
   const getHomePosition = (fid: FingerType): { x: number; y: number } => {
@@ -308,7 +307,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
           const pos = getFingerPosition(finger.id);
           if (!pos) return null;
 
-          const scale = finger.isLeft ? scaleLeft : scaleRight;
+          const scale = scaleLeft;
           const w = finger.width * scale;
           const h = finger.height * scale;
           const isPressed = pressedFinger === finger.id;

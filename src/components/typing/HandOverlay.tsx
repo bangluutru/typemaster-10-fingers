@@ -14,7 +14,7 @@ interface HandOverlayProps {
   lastPressedCorrect: boolean | null;
 }
 
-// Finger-specific colors from mockup guide
+// Finger-specific colors from mockup guide for glow indicators
 const fingerColorsHex: Record<FingerType, string> = {
   lp: '#FF7BD5', // Pinky
   lr: '#C58DFF', // Ring
@@ -56,25 +56,25 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
 
   if (!rectA || !rectF || !rectJ || !rectPinkyRight) return null;
 
-  // 1. Left Hand Positioning (Align Left Index tip at 1010, 110 and Left Pinky tip at 880, 160)
-  // Distance in vector space = 1010 - 880 = 130 units
+  // 1. Left Hand Positioning (Align Left Index tip at 1100, 200 and Left Pinky tip at 965, 220)
+  // Distance in vector space = 1100 - 965 = 135 units
   const leftDistance = rectF.centerX - rectA.centerX;
-  const scaleLeft = leftDistance / 130;
+  const scaleLeft = leftDistance / 135;
   const leftSvgWidth = 1536 * scaleLeft;
   const leftSvgHeight = 1024 * scaleLeft;
-  // Offset top-left of Left Hand absolute container so Left Index (1010, 110) lands exactly on phím F
-  const leftSvgLeft = rectF.centerX - 1010 * scaleLeft;
-  const leftSvgTop = rectF.centerY - 110 * scaleLeft;
+  // Offset top-left of Left Hand absolute container so Left Index (1100, 200) lands exactly on phím F
+  const leftSvgLeft = rectF.centerX - 1100 * scaleLeft;
+  const leftSvgTop = rectF.centerY - 200 * scaleLeft;
 
-  // 2. Right Hand Positioning (Align Right Index tip at 520, 110 and Right Pinky tip at 650, 160)
-  // Distance in vector space = 650 - 520 = 130 units
+  // 2. Right Hand Positioning (Align Right Index tip at 607, 210 and Right Pinky tip at 742, 230)
+  // Distance in vector space = 742 - 607 = 135 units
   const rightDistance = rectPinkyRight.centerX - rectJ.centerX;
-  const scaleRight = rightDistance / 130;
+  const scaleRight = rightDistance / 135;
   const rightSvgWidth = 1536 * scaleRight;
   const rightSvgHeight = 1024 * scaleRight;
-  // Offset top-left of Right Hand absolute container so Right Index (520, 110) lands exactly on phím J
-  const rightSvgLeft = rectJ.centerX - 520 * scaleRight;
-  const rightSvgTop = rectJ.centerY - 110 * scaleRight;
+  // Offset top-left of Right Hand absolute container so Right Index (607, 210) lands exactly on phím J
+  const rightSvgLeft = rectJ.centerX - 607 * scaleRight;
+  const rightSvgTop = rectJ.centerY - 210 * scaleRight;
 
   // Active hands highlights state
   const isLeftHandActive = activeFinger ? activeFinger.startsWith('l') : false;
@@ -139,7 +139,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
         {`
           @keyframes float-hand {
             0% { transform: translateY(0px); }
-            50% { transform: translateY(-3px); }
+            50% { transform: translateY(-4px); }
             100% { transform: translateY(0px); }
           }
           .floating-hand-left {
@@ -161,8 +161,8 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
           height: `${leftSvgHeight}px`,
           pointerEvents: 'none',
           zIndex: 25,
-          opacity: isLeftHandActive ? 0.92 : 0.45,
-          filter: isLeftHandActive ? 'drop-shadow(0 15px 20px rgba(0,0,0,0.18))' : 'grayscale(15%)',
+          opacity: isLeftHandActive ? 0.90 : 0.45,
+          filter: isLeftHandActive ? 'drop-shadow(0 15px 25px rgba(0,0,0,0.18))' : 'grayscale(15%)',
           transition: 'opacity 0.25s ease, filter 0.25s ease',
         }}
         className={`pointer-events-none select-none ${isLeftHandActive ? 'floating-hand-left' : ''}`}
@@ -170,7 +170,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
         <svg
           width="100%"
           height="100%"
-          viewBox="820 50 350 480"
+          viewBox="0 0 1536 1024"
           xmlns="http://www.w3.org/2000/svg"
           className="overflow-visible"
         >
@@ -194,8 +194,8 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
           height: `${rightSvgHeight}px`,
           pointerEvents: 'none',
           zIndex: 25,
-          opacity: isRightHandActive ? 0.92 : 0.45,
-          filter: isRightHandActive ? 'drop-shadow(0 15px 20px rgba(0,0,0,0.18))' : 'grayscale(15%)',
+          opacity: isRightHandActive ? 0.90 : 0.45,
+          filter: isRightHandActive ? 'drop-shadow(0 15px 25px rgba(0,0,0,0.18))' : 'grayscale(15%)',
           transition: 'opacity 0.25s ease, filter 0.25s ease',
         }}
         className={`pointer-events-none select-none ${isRightHandActive ? 'floating-hand-right' : ''}`}
@@ -203,7 +203,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
         <svg
           width="100%"
           height="100%"
-          viewBox="360 50 350 480"
+          viewBox="0 0 1536 1024"
           xmlns="http://www.w3.org/2000/svg"
           className="overflow-visible"
         >

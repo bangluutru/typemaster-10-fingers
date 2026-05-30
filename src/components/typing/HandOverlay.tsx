@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { fingerMapping } from '../../data/fingerMapping';
 import type { KeyboardGeometry } from './useKeyboardGeometry';
 import type { FingerType } from '../../data/fingerMapping';
 
-// Import SVG Assets directly as Vite static URLs
+// Import SVG Assets directly as Vite static URLs for the palm/hand background layers
 import leftHandSvg from '../../assets/left.svg';
 import rightHandSvg from '../../assets/right.svg';
 
@@ -14,144 +14,224 @@ interface HandOverlayProps {
   lastPressedCorrect: boolean | null;
 }
 
-// Finger-specific colors from mockup guide for glow indicators
-const fingerColorsHex: Record<FingerType, string> = {
-  lp: '#FF7BD5', // Pinky
-  lr: '#C58DFF', // Ring
-  lm: '#A6DBFF', // Middle
-  li: '#8EE7B5', // Left Index
-  lt: '#6EE7E0', // Left Thumb
-  rt: '#6EE7E0', // Right Thumb
-  ri: '#FFB455', // Right Index (Orange)
-  rm: '#A6DBFF', // Right Middle
-  rr: '#C58DFF', // Right Ring
-  rp: '#FF7BD5', // Right Pinky
+interface FingerConfig {
+  id: FingerType;
+  name: string;
+  width: number; // base size in SVG coordinates
+  height: number;
+  color: string;
+  isLeft: boolean;
+  angle: number; // visual slanting angle at home position
+}
+
+const FINGER_CONFIGS: FingerConfig[] = [
+  { id: 'lp', name: 'leftPinky', width: 80, height: 260, color: '#FF7BD5', isLeft: true, angle: -8 },
+  { id: 'lr', name: 'leftRing', width: 84, height: 300, color: '#C58DFF', isLeft: true, angle: -4 },
+  { id: 'lm', name: 'leftMiddle', width: 88, height: 330, color: '#A6DBFF', isLeft: true, angle: 0 },
+  { id: 'li', name: 'leftIndex', width: 88, height: 300, color: '#8EE7B5', isLeft: true, angle: 4 },
+  { id: 'lt', name: 'leftThumb', width: 90, height: 220, color: '#6EE7E0', isLeft: true, angle: -22 },
+  { id: 'rt', name: 'rightThumb', width: 90, height: 220, color: '#6EE7E0', isLeft: false, angle: 22 },
+  { id: 'ri', name: 'rightIndex', width: 88, height: 300, color: '#FFB455', isLeft: false, angle: -4 },
+  { id: 'rm', name: 'rightMiddle', width: 88, height: 330, color: '#A6DBFF', isLeft: false, angle: 0 },
+  { id: 'rr', name: 'rightRing', width: 84, height: 300, color: '#C58DFF', isLeft: false, angle: 4 },
+  { id: 'rp', name: 'rightPinky', width: 80, height: 260, color: '#FF7BD5', isLeft: false, angle: 8 },
+];
+
+const fingerHomeKeys: Record<FingerType, string> = {
+  lp: 'a',
+  lr: 's',
+  lm: 'd',
+  li: 'f',
+  lt: 'space',
+  rt: 'space',
+  ri: 'j',
+  rm: 'k',
+  rr: 'l',
+  rp: ';',
 };
 
 export const HandOverlay: React.FC<HandOverlayProps> = ({
   geometry,
   targetChar,
+  lastPressedKey,
   lastPressedCorrect,
 }) => {
+  const [pressedFinger, setPressedFinger] = useState<FingerType | null>(null);
+
+  // Detect correct key strokes to trigger transient tapping down animation
+  useEffect(() => {
+    if (lastPressedCorrect === true && lastPressedKey) {
+      const keyChar = lastPressedKey === 'Space' ? ' ' : lastPressedKey;
+      const config = fingerMapping[keyChar.toLowerCase()] || fingerMapping[keyChar];
+      if (config) {
+        setPressedFinger(config.finger);
+        const timer = setTimeout(() => {
+          setPressedFinger(null);
+        }, 110); // Tap down duration: 110ms
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [lastPressedCorrect, lastPressedKey]);
+
   // Hide overlay if keyboard geometry hasn't been measured yet to avoid jumping
   if (Object.keys(geometry).length === 0) return null;
 
   // Resolve target mapping configuration
   const targetConfig = fingerMapping[targetChar] || null;
-  const targetFinger = targetConfig ? targetConfig.finger : null;
+  const activeFinger = targetConfig ? targetConfig.finger : null;
+  const targetKeyId = targetConfig ? targetConfig.key : targetChar.toLowerCase();
 
-  let activeFinger: FingerType | null = null;
-  if (targetFinger) {
-    activeFinger = targetFinger;
-  }
-
-  // Resolve typing state
-  const isTypingError = lastPressedCorrect === false;
-
-  // DYNAMIC DOCKING GEOMETRY MATH (A to F for Left Hand, J to ; for Right Hand)
+  // HOME KEY REFERENCE NODES
   const rectA = geometry['a'];
   const rectF = geometry['f'];
   const rectJ = geometry['j'];
   const rectPinkyRight = geometry[';'];
+  const spaceRect = geometry['space'];
 
-  if (!rectA || !rectF || !rectJ || !rectPinkyRight) return null;
+  if (!rectA || !rectF || !rectJ || !rectPinkyRight || !spaceRect) return null;
 
-  // 1. Left Hand Positioning (Align Left Index tip at 1100, 200 and Left Pinky tip at 810, 220)
-  // Distance in vector space = 1100 - 810 = 290 units
+  // Spacebar Thumbs center offsets
+  const leftSpaceX = spaceRect.x + spaceRect.width * 0.38;
+  const rightSpaceX = spaceRect.x + spaceRect.width * 0.62;
+  const spaceY = spaceRect.centerY - spaceRect.height * 0.15;
+
+  // 1. Left Palm Background Positioning (Align Left Index tip at 1100, 200 and Left Pinky tip at 810, 220)
   const leftDistance = rectF.centerX - rectA.centerX;
   const scaleLeft = leftDistance / 290;
   const leftSvgWidth = 1536 * scaleLeft;
   const leftSvgHeight = 1024 * scaleLeft;
-  // Offset top-left of Left Hand absolute container so Left Index (1100, 200) lands exactly on phím F
   const leftSvgLeft = rectF.centerX - 1100 * scaleLeft;
   const leftSvgTop = rectF.centerY - 200 * scaleLeft;
 
-  // 2. Right Hand Positioning (Align Right Index tip at 420, 210 and Right Pinky tip at 810, 230)
-  // Distance in vector space = 810 - 420 = 390 units
+  // 2. Right Palm Background Positioning (Align Right Index tip at 420, 210 and Right Pinky tip at 810, 230)
   const rightDistance = rectPinkyRight.centerX - rectJ.centerX;
   const scaleRight = rightDistance / 390;
   const rightSvgWidth = 1536 * scaleRight;
   const rightSvgHeight = 1024 * scaleRight;
-  // Offset top-left of Right Hand absolute container so Right Index (420, 210) lands exactly on phím J
   const rightSvgLeft = rectJ.centerX - 420 * scaleRight;
   const rightSvgTop = rectJ.centerY - 210 * scaleRight;
 
-  // Active hands highlights state
-  const isLeftHandActive = activeFinger ? activeFinger.startsWith('l') : false;
-  const isRightHandActive = activeFinger ? activeFinger.startsWith('r') : false;
-
-  // Render glow indicator overlay directly over the active key center
-  const renderActiveFingerIndicator = () => {
-    if (!activeFinger) return null;
-
-    let targetKeyId = 'a';
-    if (activeFinger) {
-      const config = fingerMapping[targetChar];
-      targetKeyId = config ? config.key : targetChar.toLowerCase();
+  // Get Home position of any finger
+  const getHomePosition = (fid: FingerType): { x: number; y: number } => {
+    if (fid === 'lt') return { x: leftSpaceX, y: spaceY };
+    if (fid === 'rt') return { x: rightSpaceX, y: spaceY };
+    const hkey = fingerHomeKeys[fid];
+    const rect = geometry[hkey];
+    if (rect) {
+      return { x: rect.centerX, y: rect.centerY };
     }
-    
-    let destRect = geometry[targetKeyId.toLowerCase()];
-    if (!destRect && targetKeyId === 'space') {
-      destRect = geometry['space'];
-    }
+    return { x: 0, y: 0 };
+  };
 
-    if (!destRect) return null;
-
-    let destX = destRect.centerX;
-    let destY = destRect.centerY;
-
-    // Adjust custom offsets for Spacebar Thumbs
-    if (targetKeyId === 'space') {
-      if (activeFinger === 'lt') {
-        destX = destRect.x + destRect.width * 0.38;
-      } else if (activeFinger === 'rt') {
-        destX = destRect.x + destRect.width * 0.62;
+  // Get active or home position of any finger
+  const getFingerPosition = (fid: FingerType): { x: number; y: number } => {
+    if (fid === activeFinger) {
+      let destRect = geometry[targetKeyId.toLowerCase()];
+      if (!destRect && targetKeyId === 'space') {
+        destRect = spaceRect;
       }
-      destY = destRect.centerY - destRect.height * 0.15;
+      if (destRect) {
+        if (targetKeyId === 'space') {
+          return fid === 'lt' ? { x: leftSpaceX, y: spaceY } : { x: rightSpaceX, y: spaceY };
+        }
+        return { x: destRect.centerX, y: destRect.centerY };
+      }
     }
+    return getHomePosition(fid);
+  };
 
-    const activeColor = isTypingError ? '#ef4444' : fingerColorsHex[activeFinger];
-
+  // Dynamic SVG Renderer for the finger capsule
+  const renderFingerSvg = (config: FingerConfig, w: number, h: number, isActive: boolean) => {
+    const { color } = config;
+    const isTypingError = lastPressedCorrect === false && isActive;
+    const activeColor = isTypingError ? '#ef4444' : color;
+    
     return (
-      <div
-        style={{
-          position: 'absolute',
-          left: `${destX}px`,
-          top: `${destY}px`,
-          width: '38px',
-          height: '38px',
-          borderRadius: '50%',
-          backgroundColor: `${activeColor}33`,
-          border: `2.5px solid ${activeColor}`,
-          boxShadow: `0 0 16px ${activeColor}, inset 0 0 8px ${activeColor}`,
-          transform: 'translate(-50%, -50%) scale(1)',
-          pointerEvents: 'none',
-          zIndex: 30,
-        }}
-        className="animate-pulse"
-      />
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${w} ${h}`}
+        xmlns="http://www.w3.org/2000/svg"
+        className="overflow-visible"
+      >
+        <defs>
+          <linearGradient id={`finger-grad-${config.id}`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={activeColor} stopOpacity={isActive ? 0.90 : 0.65} />
+            <stop offset="60%" stopColor={activeColor} stopOpacity={isActive ? 0.60 : 0.40} />
+            <stop offset="100%" stopColor={activeColor} stopOpacity={0.05} />
+          </linearGradient>
+          {isActive && (
+            <filter id={`glow-${config.id}`} x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor={activeColor} floodOpacity="0.75" />
+            </filter>
+          )}
+        </defs>
+        
+        {/* Finger Body Capsule */}
+        <rect
+          x="0"
+          y="0"
+          width={w}
+          height={h}
+          rx={w / 2}
+          fill={`url(#finger-grad-${config.id})`}
+          stroke={activeColor}
+          strokeWidth={isActive ? 2.5 : 1.2}
+          strokeOpacity={isActive ? 0.85 : 0.40}
+          filter={isActive ? `url(#glow-${config.id})` : undefined}
+          style={{ transition: 'stroke-width 0.2s ease, stroke-opacity 0.2s ease' }}
+        />
+        
+        {/* Rounded Fingernail */}
+        <ellipse
+          cx={w / 2}
+          cy={w / 2 + 3}
+          rx={w / 2 - 5}
+          ry={w / 2 - 4}
+          fill="rgba(255, 255, 255, 0.45)"
+          stroke="rgba(255, 255, 255, 0.75)"
+          strokeWidth="1"
+          style={{ mixBlendMode: 'overlay' }}
+        />
+        
+        {/* Knuckle Crease 1 */}
+        <path
+          d={`M ${w * 0.15} ${h * 0.42} Q ${w / 2} ${h * 0.38} ${w * 0.85} ${h * 0.42}`}
+          fill="none"
+          stroke={activeColor}
+          strokeWidth="1.2"
+          strokeOpacity="0.30"
+        />
+        <path
+          d={`M ${w * 0.15} ${h * 0.46} Q ${w / 2} ${h * 0.42} ${w * 0.85} ${h * 0.46}`}
+          fill="none"
+          stroke={activeColor}
+          strokeWidth="1"
+          strokeOpacity="0.20"
+        />
+        
+        {/* Knuckle Crease 2 */}
+        <path
+          d={`M ${w * 0.15} ${h * 0.72} Q ${w / 2} ${h * 0.68} ${w * 0.85} ${h * 0.72}`}
+          fill="none"
+          stroke={activeColor}
+          strokeWidth="1.2"
+          strokeOpacity="0.30"
+        />
+        <path
+          d={`M ${w * 0.15} ${h * 0.76} Q ${w / 2} ${h * 0.72} ${w * 0.85} ${h * 0.76}`}
+          fill="none"
+          stroke={activeColor}
+          strokeWidth="1"
+          strokeOpacity="0.20"
+        />
+      </svg>
     );
   };
 
   return (
     <>
-      <style>
-        {`
-          @keyframes float-hand {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-4px); }
-            100% { transform: translateY(0px); }
-          }
-          .floating-hand-left {
-            animation: float-hand 4s ease-in-out infinite;
-          }
-          .floating-hand-right {
-            animation: float-hand 4s ease-in-out infinite 2s;
-          }
-        `}
-      </style>
-
-      {/* 1. LEFT HAND SVG ASSET */}
+      {/* 1. FAINT LEFT PALM BACKGROUND LAYER (Static) */}
       <div
         style={{
           position: 'absolute',
@@ -160,19 +240,17 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
           width: `${leftSvgWidth}px`,
           height: `${leftSvgHeight}px`,
           pointerEvents: 'none',
-          zIndex: 25,
-          opacity: isLeftHandActive ? 0.90 : 0.45,
-          filter: isLeftHandActive ? 'drop-shadow(0 15px 25px rgba(0,0,0,0.18))' : 'grayscale(15%)',
-          transition: 'opacity 0.25s ease, filter 0.25s ease',
+          zIndex: 24,
+          opacity: 0.18,
+          filter: 'grayscale(25%)',
+          transition: 'opacity 0.3s ease',
         }}
-        className={`pointer-events-none select-none ${isLeftHandActive ? 'floating-hand-left' : ''}`}
       >
         <svg
           width="100%"
           height="100%"
           viewBox="0 0 1536 1024"
           xmlns="http://www.w3.org/2000/svg"
-          className="overflow-visible"
         >
           <image
             href={leftHandSvg}
@@ -184,7 +262,7 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
         </svg>
       </div>
 
-      {/* 2. RIGHT HAND SVG ASSET */}
+      {/* 2. FAINT RIGHT PALM BACKGROUND LAYER (Static) */}
       <div
         style={{
           position: 'absolute',
@@ -193,19 +271,17 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
           width: `${rightSvgWidth}px`,
           height: `${rightSvgHeight}px`,
           pointerEvents: 'none',
-          zIndex: 25,
-          opacity: isRightHandActive ? 0.90 : 0.45,
-          filter: isRightHandActive ? 'drop-shadow(0 15px 25px rgba(0,0,0,0.18))' : 'grayscale(15%)',
-          transition: 'opacity 0.25s ease, filter 0.25s ease',
+          zIndex: 24,
+          opacity: 0.18,
+          filter: 'grayscale(25%)',
+          transition: 'opacity 0.3s ease',
         }}
-        className={`pointer-events-none select-none ${isRightHandActive ? 'floating-hand-right' : ''}`}
       >
         <svg
           width="100%"
           height="100%"
           viewBox="0 0 1536 1024"
           xmlns="http://www.w3.org/2000/svg"
-          className="overflow-visible"
         >
           <image
             href={rightHandSvg}
@@ -217,8 +293,49 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
         </svg>
       </div>
 
-      {/* 3. DYNAMIC ACTIVE FINGER NEON GLOW INDICATOR OVERLAY */}
-      {renderActiveFingerIndicator()}
+      {/* 3. INDEPENDENT DYNAMIC INTERACTIVE FINGERS */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 25,
+        }}
+        className="hand-overlay"
+      >
+        {FINGER_CONFIGS.map((finger) => {
+          const isActive = activeFinger === finger.id;
+          const pos = getFingerPosition(finger.id);
+          if (!pos) return null;
+
+          const scale = finger.isLeft ? scaleLeft : scaleRight;
+          const w = finger.width * scale;
+          const h = finger.height * scale;
+          const isPressed = pressedFinger === finger.id;
+
+          return (
+            <div
+              key={finger.id}
+              style={{
+                position: 'absolute',
+                left: `${pos.x - w / 2}px`,
+                top: `${pos.y - w / 2}px`, // anchor fingertip circle center to key center
+                width: `${w}px`,
+                height: `${h}px`,
+                pointerEvents: 'none',
+                zIndex: isActive ? 30 : 26,
+                opacity: isActive ? 0.90 : 0.60,
+                transform: `translateY(${isPressed ? '6px' : '0px'}) scale(${isPressed ? 0.93 : 1.0}) rotate(${finger.angle}deg)`,
+                transformOrigin: 'top center', // rotate slanting from the fingernail anchor tip
+                transition: 'left 200ms cubic-bezier(0.25, 1, 0.5, 1), top 200ms cubic-bezier(0.25, 1, 0.5, 1), transform 90ms ease, opacity 200ms ease',
+              }}
+              className="finger"
+            >
+              {renderFingerSvg(finger, finger.width, finger.height, isActive)}
+            </div>
+          );
+        })}
+      </div>
     </>
   );
 };

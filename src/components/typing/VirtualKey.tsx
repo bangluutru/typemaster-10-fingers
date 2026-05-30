@@ -14,6 +14,31 @@ interface VirtualKeyProps {
   registerRef?: (el: HTMLElement | null) => void;
 }
 
+const fingerIdMap: Record<FingerType, string> = {
+  lp: 'leftPinky',
+  lr: 'leftRing',
+  lm: 'leftMiddle',
+  li: 'leftIndex',
+  lt: 'leftThumb',
+  rt: 'rightThumb',
+  ri: 'rightIndex',
+  rm: 'rightMiddle',
+  rr: 'rightRing',
+  rp: 'rightPinky',
+};
+
+const homeKeys: Record<string, string> = {
+  'a': 'A',
+  's': 'S',
+  'd': 'D',
+  'f': 'F',
+  'j': 'J',
+  'k': 'K',
+  'l': 'L',
+  ';': ';',
+  'space': 'Space',
+};
+
 export const VirtualKey: React.FC<VirtualKeyProps> = ({
   label,
   shiftLabel,
@@ -48,10 +73,14 @@ export const VirtualKey: React.FC<VirtualKeyProps> = ({
     return 'bg-teal-400';
   };
 
+  const isHomeKey = homeKeys[keyId.toLowerCase()];
+
   return (
     <div
       ref={registerRef}
       data-key={keyId}
+      data-finger={finger ? fingerIdMap[finger] : undefined}
+      data-home-key={isHomeKey ? homeKeys[keyId.toLowerCase()] : undefined}
       className={`${baseClass} ${fingerClass} ${stateClass} shadow-sm`}
     >
       {shiftLabel && (

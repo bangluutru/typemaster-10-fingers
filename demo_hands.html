@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bản Vẽ SVG Bàn Tay Cao Cấp - Typemaster 10 Fingers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b1329;
+      --panel-bg: rgba(255, 255, 255, 0.03);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-color: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      /* Hex colors from design guide */
+      --pinky-color: #FF7BD5;
+      --ring-color: #C58DFF;
+      --middle-color: #A6DBFF;
+      --index-left: #8EE7B5;
+      --index-right: #FFB455;
+      --thumb-color: #6EE7E0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.1) 0px, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-col: column;
+      align-items: center;
+      padding: 3rem 1.5rem;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1100px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 30%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 300;
+    }
+
+    .showcase-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 2.5rem;
+      padding: 3rem;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 4rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    /* Seamless Outer Outline hand svg styles */
+    .hand-wrapper {
+      width: 380px;
+      height: 480px;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.3));
+    }
+
+    .hand-wrapper:hover {
+      transform: translateY(-8px) scale(1.02);
+    }
+
+    .hand-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* Hand anatomy paths styling */
+    .outer-outline {
+      fill: url(#palmSkinGrad);
+      stroke: rgba(238, 150, 110, 0.45);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .finger-overlay {
+      stroke-width: 0;
+      mix-blend-mode: normal;
+    }
+
+    .nail {
+      fill: rgba(255, 255, 255, 0.35);
+      stroke: rgba(255, 255, 255, 0.6);
+      stroke-width: 0.8;
+    }
+
+    .knuckle {
+      fill: none;
+      stroke: rgba(238, 150, 110, 0.28);
+      stroke-width: 0.8;
+      stroke-linecap: round;
+    }
+
+    /* Interactive state demonstration */
+    .finger-group {
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .finger-group:hover {
+      filter: drop-shadow(0 0 10px var(--hover-shadow-color));
+      opacity: 0.95 !important;
+    }
+
+    .legend-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--panel-border);
+      border-radius: 1.5rem;
+      padding: 1.5rem 2rem;
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .legend-text h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .legend-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .tip-box {
+      background: rgba(110, 231, 224, 0.05);
+      border: 1px solid rgba(110, 231, 224, 0.15);
+      border-radius: 1.2rem;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      color: #6EE7E0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Bản Vẽ SVG Bàn Tay Liền Khối Độc Quyền</h1>
+    <p>Giải pháp Outline viền ngoài đơn nhất giúp bàn tay liền mạch, tròn đầy và cực kỳ chân thật</p>
+  </header>
+
+  <div class="showcase-panel">
+    <!-- LEFT HAND CONTAINER -->
+    <div class="hand-wrapper">
+      <svg class="hand-svg" viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Palm skin tone gradient -->
+          <linearGradient id="palmSkinGrad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#FFEAD5" stopOpacity="0.45"/>
+            <stop offset="100%" stopColor="#FFC8A2" stopOpacity="0.25"/>
+          </linearGradient>
+
+          <!-- Smooth fading pastel gradients (Opaque at tip, melts into skin at root) -->
+          <linearGradient id="left-pinky-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--pinky-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--pinky-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--pinky-color)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="left-ring-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--ring-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--ring-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--ring-color)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="left-middle-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--middle-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--middle-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--middle-color)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="left-index-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--index-left)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--index-left)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--index-left)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="left-thumb-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--thumb-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--thumb-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--thumb-color)" stopOpacity="0.0"/>
+          </linearGradient>
+
+          <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#000" floodOpacity="0.3"/>
+          </filter>
+        </defs>
+
+        <g filter="url(#shadow)">
+          <!-- 1. Single Outer Outline encapsulating the entire left hand (Palm + 5 Fingers) -->
+          <path class="outer-outline" d="M 70,380 C 45,350 25,290 33,205 C 31,165 33,130 40,118 C 45,108 55,108 59,118 C 65,130 63,165 65,198 C 68,150 78,92 86,80 C 92,70 102,70 108,80 C 117,92 120,150 120,186 C 123,145 133,72 142,60 C 147,50 157,50 162,60 C 171,72 173,145 174,186 C 177,150 186,105 196,95 C 201,85 211,85 216,95 C 224,105 225,150 221,208 C 220,215 212,228 215,225 C 220,202 242,198 258,212 C 272,224 286,242 284,258 C 281,270 262,274 246,268 C 230,262 232,320 230,380 Z" />
+
+          <!-- 2. Inside: Seamless Color overlays + nails + knuckle curves -->
+          
+          <!-- Left Pinky -->
+          <g class="finger-group" style="--hover-shadow-color: var(--pinky-color); opacity: 0.7;" transform-origin="47px 185px">
+            <path class="finger-overlay" fill="url(#left-pinky-grad)" d="M 33,205 C 31,165 33,130 40,118 C 45,108 55,108 59,118 C 65,130 63,165 65,198 Z" />
+            <path class="knuckle" d="M 38,155 Q 47,152 56,155" />
+            <path class="knuckle" d="M 35,178 Q 47,175 58,178" />
+            <ellipse class="nail" cx="47" cy="127" rx="10" ry="7" transform="rotate(-82 47 127)" />
+          </g>
+
+          <!-- Left Ring -->
+          <g class="finger-group" style="--hover-shadow-color: var(--ring-color); opacity: 0.7;" transform-origin="98px 175px">
+            <path class="finger-overlay" fill="url(#left-ring-grad)" d="M 65,198 C 68,150 78,92 86,80 C 92,70 102,70 108,80 C 117,92 120,150 120,186 Z" />
+            <path class="knuckle" d="M 80,125 Q 100,121 118,125" />
+            <path class="knuckle" d="M 75,155 Q 100,150 118,155" />
+            <ellipse class="nail" cx="100" cy="87" rx="11" ry="8" transform="rotate(-80 100 87)" />
+          </g>
+
+          <!-- Left Middle -->
+          <g class="finger-group" style="--hover-shadow-color: var(--middle-color); opacity: 0.7;" transform-origin="148px 172px">
+            <path class="finger-overlay" fill="url(#left-middle-grad)" d="M 120,186 C 123,145 133,72 142,60 C 147,50 157,50 162,60 C 171,72 173,145 174,186 Z" />
+            <path class="knuckle" d="M 132,108 Q 155,103 172,108" />
+            <path class="knuckle" d="M 128,142 Q 155,137 172,142" />
+            <ellipse class="nail" cx="155" cy="67" rx="12" ry="8" transform="rotate(-77 155 67)" />
+          </g>
+
+          <!-- Left Index -->
+          <g class="finger-group" style="--hover-shadow-color: var(--index-left); opacity: 0.7;" transform-origin="192px 175px">
+            <path class="finger-overlay" fill="url(#left-index-grad)" d="M 174,186 C 177,150 186,105 196,95 C 201,85 211,85 216,95 C 224,105 225,150 221,208 Z" />
+            <path class="knuckle" d="M 188,138 Q 210,134 226,138" />
+            <path class="knuckle" d="M 182,168 Q 210,163 224,168" />
+            <ellipse class="nail" cx="210" cy="102" rx="11" ry="8" transform="rotate(-67 210 102)" />
+          </g>
+
+          <!-- Left Thumb -->
+          <g class="finger-group" style="--hover-shadow-color: var(--thumb-color); opacity: 0.7;" transform-origin="218px 230px">
+            <path class="finger-overlay" fill="url(#left-thumb-grad)" d="M 215,225 C 220,202 242,198 258,212 C 272,224 286,242 284,258 C 281,270 262,274 246,268 C 231,262 220,245 215,225 Z" />
+            <path class="knuckle" d="M 235,230 Q 250,222 262,232" />
+            <ellipse class="nail" cx="268" cy="245" rx="11" ry="8" transform="rotate(24 268 245)" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- RIGHT HAND CONTAINER -->
+    <div class="hand-wrapper">
+      <svg class="hand-svg" viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Smooth fading pastel gradients for Right Hand -->
+          <linearGradient id="right-pinky-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--pinky-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--pinky-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--pinky-color)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="right-ring-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--ring-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--ring-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--ring-color)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="right-middle-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--middle-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--middle-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--middle-color)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="right-index-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--index-right)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--index-right)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--index-right)" stopOpacity="0.0"/>
+          </linearGradient>
+          <linearGradient id="right-thumb-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--thumb-color)" stopOpacity="0.80"/>
+            <stop offset="65%" stopColor="var(--thumb-color)" stopOpacity="0.40"/>
+            <stop offset="100%" stopColor="var(--thumb-color)" stopOpacity="0.0"/>
+          </linearGradient>
+        </defs>
+
+        <g filter="url(#shadow)">
+          <!-- 1. Single Outer Outline encapsulating the entire right hand (Palm + 5 Fingers) -->
+          <path class="outer-outline" d="M 230,380 C 255,350 275,290 267,205 C 269,165 267,130 260,118 C 255,108 245,108 241,118 C 235,130 237,165 235,198 C 232,150 222,92 214,80 C 208,70 198,70 192,80 C 183,92 180,150 180,186 C 177,145 167,72 158,60 C 153,50 143,50 138,60 C 129,72 127,145 126,186 C 123,150 114,105 104,95 C 99,85 89,85 84,95 C 76,105 75,150 79,208 C 80,215 88,228 85,225 C 80,202 58,198 42,212 C 28,224 14,242 16,258 C 19,270 38,274 54,268 C 70,262 68,320 70,380 Z" />
+
+          <!-- 2. Inside: Seamless Color overlays + nails + knuckle curves -->
+          
+          <!-- Right Index -->
+          <g class="finger-group" style="--hover-shadow-color: var(--index-right); opacity: 0.7;" transform-origin="108px 175px">
+            <path class="finger-overlay" fill="url(#right-index-grad)" d="M 126,186 C 123,150 114,105 104,95 C 99,85 89,85 84,95 C 76,105 75,150 79,208 Z" />
+            <path class="knuckle" d="M 112,138 Q 90,134 74,138" />
+            <path class="knuckle" d="M 118,168 Q 90,163 76,168" />
+            <ellipse class="nail" cx="90" cy="102" rx="11" ry="8" transform="rotate(67 90 102)" />
+          </g>
+
+          <!-- Right Middle -->
+          <g class="finger-group" style="--hover-shadow-color: var(--middle-color); opacity: 0.7;" transform-origin="152px 172px">
+            <path class="finger-overlay" fill="url(#right-middle-grad)" d="M 180,186 C 177,145 167,72 158,60 C 153,50 143,50 138,60 C 129,72 127,145 126,186 Z" />
+            <path class="knuckle" d="M 168,108 Q 145,103 128,108" />
+            <path class="knuckle" d="M 172,142 Q 145,137 128,142" />
+            <ellipse class="nail" cx="145" cy="67" rx="12" ry="8" transform="rotate(77 145 67)" />
+          </g>
+
+          <!-- Right Ring -->
+          <g class="finger-group" style="--hover-shadow-color: var(--ring-color); opacity: 0.7;" transform-origin="202px 175px">
+            <path class="finger-overlay" fill="url(#right-ring-grad)" d="M 235,198 C 232,150 224,92 214,80 C 208,70 198,70 192,80 C 183,92 180,150 180,186 Z" />
+            <path class="knuckle" d="M 220,125 Q 200,121 182,125" />
+            <path class="knuckle" d="M 225,155 Q 200,150 182,155" />
+            <ellipse class="nail" cx="200" cy="87" rx="11" ry="8" transform="rotate(80 200 87)" />
+          </g>
+
+          <!-- Right Pinky -->
+          <g class="finger-group" style="--hover-shadow-color: var(--pinky-color); opacity: 0.7;" transform-origin="253px 185px">
+            <path class="finger-overlay" fill="url(#right-pinky-grad)" d="M 267,205 C 269,165 267,130 260,118 C 255,108 245,108 241,118 C 235,130 237,165 235,198 Z" />
+            <path class="knuckle" d="M 262,155 Q 253,152 244,155" />
+            <path class="knuckle" d="M 265,178 Q 253,175 242,178" />
+            <ellipse class="nail" cx="253" cy="127" rx="10" ry="7" transform="rotate(82 253 127)" />
+          </g>
+
+          <!-- Right Thumb -->
+          <g class="finger-group" style="--hover-shadow-color: var(--thumb-color); opacity: 0.7;" transform-origin="82px 230px">
+            <path class="finger-overlay" fill="url(#right-thumb-grad)" d="M 85,225 C 80,202 58,198 42,212 C 28,224 14,242 16,258 C 19,270 38,274 54,268 C 69,262 80,245 85,225 Z" />
+            <path class="knuckle" d="M 65,230 Q 50,222 38,232" />
+            <ellipse class="nail" cx="32" cy="245" rx="11" ry="8" transform="rotate(-24 32 245)" />
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="legend-card">
+    <div class="legend-item">
+      <div class="color-dot" style="background-color: var(--pinky-color)"></div>
+      <div class="legend-text">
+        <h4>Ngón Út</h4>
+        <p>Phím A, Q, Z, /</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="color-dot" style="background-color: var(--ring-color)"></div>
+      <div class="legend-text">
+        <h4>Ngón Áp Út</h4>
+        <p>Phím S, W, X, L</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="color-dot" style="background-color: var(--middle-color)"></div>
+      <div class="legend-text">
+        <h4>Ngón Giữa</h4>
+        <p>Phím D, E, C, K</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="color-dot" style="background-color: var(--index-left)"></div>
+      <div class="legend-text">
+        <h4>Ngón Trỏ Trái</h4>
+        <p>Phím F, G, R, T, V, B</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="color-dot" style="background-color: var(--index-right)"></div>
+      <div class="legend-text">
+        <h4>Ngón Trỏ Phải</h4>
+        <p>Phím J, H, Y, U, N, M</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="color-dot" style="background-color: var(--thumb-color)"></div>
+      <div class="legend-text">
+        <h4>Ngón Cái</h4>
+        <p>Phím Spacebar</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <span>💡</span>
+    <p><strong>Mẹo trải nghiệm:</strong> Di chuột (Hover) qua các ngón tay để cảm nhận hiệu ứng <strong>Glow Shadow</strong> phát sáng và thay đổi trạng thái trong suốt cực kỳ sinh động!</p>
+  </div>
+</div>
+
+</body>
+</html>

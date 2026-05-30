@@ -25,16 +25,16 @@ interface FingerConfig {
 }
 
 const FINGER_CONFIGS: FingerConfig[] = [
-  { id: 'lp', name: 'leftPinky', width: 80, height: 260, color: '#FF7BD5', isLeft: true, angle: -8 },
-  { id: 'lr', name: 'leftRing', width: 84, height: 300, color: '#C58DFF', isLeft: true, angle: -4 },
-  { id: 'lm', name: 'leftMiddle', width: 88, height: 330, color: '#A6DBFF', isLeft: true, angle: 0 },
-  { id: 'li', name: 'leftIndex', width: 88, height: 300, color: '#8EE7B5', isLeft: true, angle: 4 },
-  { id: 'lt', name: 'leftThumb', width: 90, height: 220, color: '#6EE7E0', isLeft: true, angle: -22 },
-  { id: 'rt', name: 'rightThumb', width: 90, height: 220, color: '#6EE7E0', isLeft: false, angle: 22 },
-  { id: 'ri', name: 'rightIndex', width: 88, height: 300, color: '#FFB455', isLeft: false, angle: -4 },
-  { id: 'rm', name: 'rightMiddle', width: 88, height: 330, color: '#A6DBFF', isLeft: false, angle: 0 },
-  { id: 'rr', name: 'rightRing', width: 84, height: 300, color: '#C58DFF', isLeft: false, angle: 4 },
-  { id: 'rp', name: 'rightPinky', width: 80, height: 260, color: '#FF7BD5', isLeft: false, angle: 8 },
+  { id: 'lp', name: 'leftPinky', width: 113, height: 368, color: '#FF7BD5', isLeft: true, angle: -8 },
+  { id: 'lr', name: 'leftRing', width: 119, height: 424, color: '#C58DFF', isLeft: true, angle: -4 },
+  { id: 'lm', name: 'leftMiddle', width: 124, height: 467, color: '#A6DBFF', isLeft: true, angle: 0 },
+  { id: 'li', name: 'leftIndex', width: 124, height: 424, color: '#8EE7B5', isLeft: true, angle: 4 },
+  { id: 'lt', name: 'leftThumb', width: 127, height: 311, color: '#6EE7E0', isLeft: true, angle: -22 },
+  { id: 'rt', name: 'rightThumb', width: 127, height: 311, color: '#6EE7E0', isLeft: false, angle: 22 },
+  { id: 'ri', name: 'rightIndex', width: 124, height: 424, color: '#FFB455', isLeft: false, angle: -4 },
+  { id: 'rm', name: 'rightMiddle', width: 124, height: 467, color: '#A6DBFF', isLeft: false, angle: 0 },
+  { id: 'rr', name: 'rightRing', width: 119, height: 424, color: '#C58DFF', isLeft: false, angle: 4 },
+  { id: 'rp', name: 'rightPinky', width: 113, height: 368, color: '#FF7BD5', isLeft: false, angle: 8 },
 ];
 
 const fingerHomeKeys: Record<FingerType, string> = {
@@ -95,20 +95,20 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
   const rightSpaceX = spaceRect.x + spaceRect.width * 0.62;
   const spaceY = spaceRect.centerY - spaceRect.height * 0.15;
 
-  // 1. Left Palm Background Positioning (Align Left Index tip at 1100, 200 and Left Pinky tip at 810, 220)
+  // 1. Left Palm Background Positioning (Calibrated: Index center at 1045, 196; Pinky center at 635, 289.5; distance = 410)
   const leftDistance = rectF.centerX - rectA.centerX;
-  const scaleLeft = leftDistance / 290;
+  const scaleLeft = leftDistance / 410;
   const leftSvgWidth = 1536 * scaleLeft;
   const leftSvgHeight = 1024 * scaleLeft;
-  const leftSvgLeft = rectF.centerX - 1100 * scaleLeft;
-  const leftSvgTop = rectF.centerY - 200 * scaleLeft;
+  const leftSvgLeft = rectF.centerX - 1045 * scaleLeft;
+  const leftSvgTop = rectF.centerY - 196 * scaleLeft;
 
-  // 2. Right Palm Background Positioning (Align Mirrored Right Index tip at 436, 200)
+  // 2. Right Palm Background Positioning (Mirrored: Index center at 491, 196)
   // We use scaleLeft to ensure the left and right background palms are exactly equal in size!
   const rightSvgWidth = 1536 * scaleLeft;
   const rightSvgHeight = 1024 * scaleLeft;
-  const rightSvgLeft = rectJ.centerX - 436 * scaleLeft;
-  const rightSvgTop = rectJ.centerY - 200 * scaleLeft;
+  const rightSvgLeft = rectJ.centerX - 491 * scaleLeft;
+  const rightSvgTop = rectJ.centerY - 196 * scaleLeft;
 
   // Get Home position of any finger
   const getHomePosition = (fid: FingerType): { x: number; y: number } => {

@@ -56,24 +56,24 @@ export const HandOverlay: React.FC<HandOverlayProps> = ({
 
   if (!rectA || !rectF || !rectJ || !rectPinkyRight) return null;
 
-  // 1. Left Hand Positioning (Align Left Index tip at 1100, 200 and Left Pinky tip at 965, 220)
-  // Distance in vector space = 1100 - 965 = 135 units
+  // 1. Left Hand Positioning (Align Left Index tip at 1100, 200 and Left Pinky tip at 810, 220)
+  // Distance in vector space = 1100 - 810 = 290 units
   const leftDistance = rectF.centerX - rectA.centerX;
-  const scaleLeft = leftDistance / 135;
+  const scaleLeft = leftDistance / 290;
   const leftSvgWidth = 1536 * scaleLeft;
   const leftSvgHeight = 1024 * scaleLeft;
   // Offset top-left of Left Hand absolute container so Left Index (1100, 200) lands exactly on phím F
   const leftSvgLeft = rectF.centerX - 1100 * scaleLeft;
   const leftSvgTop = rectF.centerY - 200 * scaleLeft;
 
-  // 2. Right Hand Positioning (Align Right Index tip at 607, 210 and Right Pinky tip at 742, 230)
-  // Distance in vector space = 742 - 607 = 135 units
+  // 2. Right Hand Positioning (Align Right Index tip at 420, 210 and Right Pinky tip at 810, 230)
+  // Distance in vector space = 810 - 420 = 390 units
   const rightDistance = rectPinkyRight.centerX - rectJ.centerX;
-  const scaleRight = rightDistance / 135;
+  const scaleRight = rightDistance / 390;
   const rightSvgWidth = 1536 * scaleRight;
   const rightSvgHeight = 1024 * scaleRight;
-  // Offset top-left of Right Hand absolute container so Right Index (607, 210) lands exactly on phím J
-  const rightSvgLeft = rectJ.centerX - 607 * scaleRight;
+  // Offset top-left of Right Hand absolute container so Right Index (420, 210) lands exactly on phím J
+  const rightSvgLeft = rectJ.centerX - 420 * scaleRight;
   const rightSvgTop = rectJ.centerY - 210 * scaleRight;
 
   // Active hands highlights state
